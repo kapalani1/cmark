@@ -121,6 +121,7 @@ void S_free_nodes(cmark_node *e)
 		case NODE_INLINE_HTML:
 		case NODE_CODE:
 		case NODE_HTML:
+        case NODE_INLINE_LINK:
 			cmark_chunk_free(&e->as.literal);
 			break;
 		case NODE_LINK:
