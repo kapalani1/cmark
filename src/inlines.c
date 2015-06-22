@@ -32,6 +32,8 @@ static const char *RIGHTSINGLEQUOTE = "\xE2\x80\x99";
 #define make_emph() make_simple(CMARK_NODE_EMPH)
 #define make_strong() make_simple(CMARK_NODE_STRONG)
 
+#define DEBUG
+
 typedef struct delimiter {
 	struct delimiter *previous;
 	struct delimiter *next;
@@ -679,21 +681,48 @@ cmark_chunk cmark_clean_title(cmark_chunk *title)
 static cmark_node* handle_pointy_brace(subject* subj)
 {
 	int matchlen = 0;
+    int inline_match = 0;
+    int sps = 0;
 	cmark_chunk contents;
 
 	advance(subj);  // advance past first <
 
 	// first try to match a URL autolink
-	matchlen = scan_autolink_uri(&subj->input, subj->pos);
+	matchlen = scan_autolink_uri(&subj->input,subj->pos);
+    if(matchlen==0)
+    {
+        sps = scan_spacechars(&subj->input,subj->pos);
+        subj->pos+=sps;
+        inline_match = scan_autolink_inline(&subj->input,subj->pos);
+        if(inline_match)
+        {
+            sps = scan_spacechars(&(subj->input),subj->pos+inline_match);
+        }
+    }
 	if (matchlen > 0) {
 		contents = cmark_chunk_dup(&subj->input, subj->pos, matchlen - 1);
 		subj->pos += matchlen;
 
-		return make_autolink(
-		           make_str_with_entities(&contents),
-		           contents, 0
-		       );
-	}
+		return make_autolink(make_str(contents),contents, 0);
+    }
+    else if(inline_match>0)
+    {
+        int temp = subj->pos;
+        subj->pos+=inline_match+sps;
+        if(peek_char(subj)!='>')
+        {
+            return make_str(cmark_chunk_literal("<"));
+        }
+        //now we know that we have a valid reference to an inline link because it ended with >
+        subj->pos = temp;
+        cmark_chunk label = cmark_chunk_dup(      &subj->input,subj->pos+1,inline_match+sps-1);
+        contents = cmark_chunk_dup(&subj->input, subj->pos,inline_match);
+        subj->pos +=inline_match+sps;
+
+        //advance subject so that you don't add the > at the end of the link
+        advance(subj);
+        return make_autolink(make_str(label),contents,0);
+    }
 
 	// next try to match an email autolink
 	matchlen = scan_autolink_email(&subj->input, subj->pos);
@@ -702,7 +731,7 @@ static cmark_node* handle_pointy_brace(subject* subj)
 		subj->pos += matchlen;
 
 		return make_autolink(
-		           make_str_with_entities(&contents),
+            make_str_with_entities(&contents),
 		           contents, 1
 		       );
 	}
@@ -765,6 +794,44 @@ noMatch:
 
 }
 
+static cmark_node* handle_close_curly_brace(subject* subj,cmark_node* parent)
+{
+    delimiter *opener = subj->last_delim;
+    cmark_node *inl;
+    advance(subj); //advance past }
+    while(opener)
+    {
+        if(opener->delim_char=='{')
+        {
+            break;
+        }
+    }
+    if(opener == NULL)
+    {
+        return make_str(cmark_chunk_literal("}"));
+    }
+    if(!opener->active)
+    {
+        remove_delimiter(subj,opener);
+        return make_str(cmark_chunk_literal("}"));
+    }
+    //came here so have a full inline link
+    inl = opener->inl_text;
+    inl->type = NODE_INLINE_LINK;
+    cmark_node* tag_name = opener->inl_text->next;
+    cmark_chunk_free(&inl->as.literal);
+    if(!cmark_node_set_literal(inl,cmark_node_get_literal(tag_name)))
+    {
+        fprintf(stderr,"Couldn't set literal. Exiting! \n");
+        exit(1);
+    }
+    cmark_node_free(tag_name);
+    inl->next = NULL;
+    cmark_node_unlink(inl);
+    cmark_node_prepend_child(parent,inl);
+    return NULL;
+}
+
 // Return a link, an image, or a literal close bracket.
 static cmark_node* handle_close_bracket(subject* subj, cmark_node *parent)
 {
@@ -800,6 +867,7 @@ static cmark_node* handle_close_bracket(subject* subj, cmark_node *parent)
 
 	if (!opener->active) {
 		// take delimiter off stack
+        //could happen if you had 2 [[
 		remove_delimiter(subj, opener);
 		return make_str(cmark_chunk_literal("]"));
 	}
@@ -816,8 +884,9 @@ static cmark_node* handle_close_bracket(subject* subj, cmark_node *parent)
 	    ((n = scan_link_url(&subj->input, subj->pos + 1 + sps)) > -1)) {
 
 		// try to parse an explicit link:
-		starturl = subj->pos + 1 + sps; // after (
+		starturl = subj->pos + 1 + sps; // after ( including spaces
 		endurl = starturl + n;
+        //optional title parsing
 		starttitle = endurl + scan_spacechars(&subj->input, endurl);
 
 		// ensure there are spaces btw url and title
@@ -939,7 +1008,8 @@ static cmark_node* handle_newline(subject *subj)
 
 static int subject_find_special_char(subject *subj, int options)
 {
-	// "\n\\`&_*[]<!"
+    //Added {} to the list of special characters
+	// "\n\\`&_*[]<!{}"
 	static const int8_t SPECIAL_CHARS[256] = {
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0,
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -948,7 +1018,7 @@ static int subject_find_special_char(subject *subj, int options)
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1,
 		1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, //
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -983,7 +1053,7 @@ static int subject_find_special_char(subject *subj, int options)
 
 	while (n < subj->input.len) {
 		if (SPECIAL_CHARS[subj->input.data[n]])
-			return n;
+            return n;
 		if (options & CMARK_OPT_SMART &&
 		    SMART_PUNCT_CHARS[subj->input.data[n]])
 			return n;
@@ -1041,6 +1111,24 @@ static int parse_inline(subject* subj, cmark_node * parent, int options)
 	case ']':
 		new_inl = handle_close_bracket(subj, parent);
 		break;
+    case '{':
+        //go past the {
+        advance(subj);
+        if(peek_char(subj)=='#')
+        {
+            advance(subj);
+            new_inl = make_str(cmark_chunk_literal("{#"));
+            //delimeter stack with delimiter={ open = true closed = false and text = {#
+            push_delimiter(subj,'{',true,false,new_inl);
+        }
+        else
+        {
+            new_inl = make_str(cmark_chunk_literal("{"));
+        }
+        break;
+    case '}':
+        new_inl = handle_close_curly_brace(subj,parent);
+        break;
 	case '!':
 		advance(subj);
 		if (peek_char(subj) == '[') {
@@ -1064,9 +1152,8 @@ static int parse_inline(subject* subj, cmark_node * parent, int options)
 		new_inl = make_str(contents);
 	}
 	if (new_inl != NULL) {
-		cmark_node_append_child(parent, new_inl);
+        cmark_node_append_child(parent, new_inl);
 	}
-
 	return 1;
 }
 

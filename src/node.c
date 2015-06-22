@@ -65,6 +65,9 @@ S_can_contain(cmark_node *node, cmark_node *child)
 	case CMARK_NODE_STRONG:
 	case CMARK_NODE_LINK:
 	case CMARK_NODE_IMAGE:
+    //should it be able to contain?
+    // behaves just like link right?
+    case CMARK_NODE_INLINE_LINK:
 		return S_is_inline(child);
 
 	default:
@@ -122,6 +125,7 @@ void S_free_nodes(cmark_node *e)
 			break;
 		case NODE_LINK:
 		case NODE_IMAGE:
+        case NODE_INLINE_LINK:
 			cmark_chunk_free(&e->as.link.url);
 			cmark_chunk_free(&e->as.link.title);
 			break;
@@ -203,6 +207,8 @@ cmark_node_get_type_string(cmark_node *node)
 		return "link";
 	case CMARK_NODE_IMAGE:
 		return "image";
+    case CMARK_NODE_INLINE_LINK:
+        return "inline_link";
 	}
 
 	return "<unknown>";
@@ -289,7 +295,8 @@ cmark_node_get_literal(cmark_node *node)
 	case NODE_HTML:
 	case NODE_TEXT:
 	case NODE_INLINE_HTML:
-	case NODE_CODE:
+    case NODE_CODE:
+    case NODE_INLINE_LINK:
 		return cmark_chunk_to_cstr(&node->as.literal);
 
 	case NODE_CODE_BLOCK:
@@ -313,7 +320,8 @@ cmark_node_set_literal(cmark_node *node, const char *content)
 	case NODE_HTML:
 	case NODE_TEXT:
 	case NODE_INLINE_HTML:
-	case NODE_CODE:
+    case NODE_CODE:
+    case NODE_INLINE_LINK:
 		cmark_chunk_set_cstr(&node->as.literal, content);
 		return 1;
 

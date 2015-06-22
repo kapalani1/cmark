@@ -12,6 +12,7 @@
 #include <fcntl.h>
 #endif
 
+
 typedef enum {
 	FORMAT_NONE,
 	FORMAT_HTML,
@@ -124,8 +125,7 @@ int main(int argc, char *argv[])
 				} else if (strcmp(argv[i], "commonmark") == 0) {
 					writer = FORMAT_COMMONMARK;
 				} else {
-					fprintf(stderr,
-					        "Unknown format %s\n", argv[i]);
+					fprintf(stderr,"Unknown format %s\n", argv[i]);
 					exit(1);
 				}
 			} else {
@@ -140,6 +140,7 @@ int main(int argc, char *argv[])
 			files[numfps++] = i;
 		}
 	}
+    
 
 	parser = cmark_parser_new(options);
 	for (i = 0; i < numfps; i++) {
@@ -163,8 +164,9 @@ int main(int argc, char *argv[])
 	}
 
 	if (numfps == 0) {
-
 		while ((bytes = fread(buffer, 1, sizeof(buffer), stdin)) > 0) {
+            //in case user types markdown file in command
+            //line
 			cmark_parser_feed(parser, buffer, bytes);
 			if (bytes < sizeof(buffer)) {
 				break;

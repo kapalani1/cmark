@@ -67,8 +67,8 @@ set_target_properties(${PROGRAM} PROPERTIES
   COMPILE_FLAGS -DCMARK_STATIC_DEFINE)
 
 # Check integrity of node structure when compiled as debug:
-set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -DCMARK_DEBUG_NODES")
-set(CMAKE_LINKER_DEBUG "${CMAKE_LINKER_FLAGS_DEBUG}")
+set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -pg -DCMARK_DEBUG_NODES")
+set(CMAKE_LINKER_DEBUG "${CMAKE_LINKER_FLAGS_DEBUG} -pg")
 
 set(CMAKE_C_FLAGS_PROFILE "${CMAKE_C_FLAGS_RELEASE} -pg")
 set(CMAKE_LINKER_PROFILE "${CMAKE_LINKER_FLAGS_RELEASE} -pg")
@@ -128,7 +128,6 @@ install(FILES
 # Feature tests
 include(CheckIncludeFile)
 include(CheckCSourceCompiles)
-include(CheckCSourceRuns)
 include(CheckSymbolExists)
 CHECK_INCLUDE_FILE(stdbool.h HAVE_STDBOOL_H)
 CHECK_C_SOURCE_COMPILES(
@@ -138,10 +137,6 @@ CHECK_C_SOURCE_COMPILES("
   int f(void) __attribute__ (());
   int main() { return 0; }
 " HAVE___ATTRIBUTE__)
-CHECK_C_SOURCE_RUNS("
-  #include <stdio.h>
-  int main() { return snprintf(NULL, 0, \"123\") == 3 ? 0 : 1; }
-" HAVE_C99_SNPRINTF)
 CHECK_SYMBOL_EXISTS(va_copy stdarg.h HAVE_VA_COPY)
 
 CONFIGURE_FILE(
@@ -169,7 +164,3 @@ endif()
 if($ENV{TIMER})
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DTIMER=1")
 endif($ENV{TIMER})
-
-if(CMAKE_BUILD_TYPE STREQUAL "Ubsan")
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=undefined")
-endif()

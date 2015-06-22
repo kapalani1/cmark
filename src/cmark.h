@@ -56,6 +56,9 @@ typedef enum {
 	CMARK_NODE_EMPH,
 	CMARK_NODE_STRONG,
 	CMARK_NODE_LINK,
+    /* New Node */
+    CMARK_NODE_INLINE_LINK,
+    /* New Node */
 	CMARK_NODE_IMAGE,
 
 	CMARK_NODE_FIRST_INLINE = CMARK_NODE_TEXT,
@@ -541,7 +544,7 @@ extern const char cmark_version_string[];
 #define NODE_CODE_BLOCK           CMARK_NODE_CODE_BLOCK
 #define NODE_HTML                 CMARK_NODE_HTML
 #define NODE_PARAGRAPH            CMARK_NODE_PARAGRAPH
-#define NODE_HEADER		    CMARK_NODE_HEADER
+#define NODE_HEADER               CMARK_NODE_HEADER
 #define NODE_HRULE                CMARK_NODE_HRULE
 #define NODE_TEXT                 CMARK_NODE_TEXT
 #define NODE_SOFTBREAK            CMARK_NODE_SOFTBREAK
@@ -556,6 +559,7 @@ extern const char cmark_version_string[];
 #define ORDERED_LIST              CMARK_ORDERED_LIST
 #define PERIOD_DELIM              CMARK_PERIOD_DELIM
 #define PAREN_DELIM               CMARK_PAREN_DELIM
+#define NODE_INLINE_LINK          CMARK_NODE_INLINE_LINK
 #endif
 
 #ifdef __cplusplus

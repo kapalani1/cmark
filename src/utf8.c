@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <assert.h>
 
 #include "cmark_ctype.h"
@@ -125,10 +126,15 @@ void utf8proc_detab(cmark_strbuf *ob, const uint8_t *line, size_t size)
 		}
 
 		if (i > org)
+        {
 			cmark_strbuf_put(ob, line + org, i - org);
 
+        }
+
 		if (i >= size)
+        {
 			break;
+        }
 
 		if (line[i] == '\t') {
 			int numspaces = 4 - (tab % 4);

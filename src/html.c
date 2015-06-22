@@ -11,6 +11,7 @@
 
 // Functions to convert cmark_nodes to HTML strings.
 
+
 static void escape_html(cmark_strbuf *dest, const unsigned char *source, int length)
 {
 	if (length < 0)
@@ -91,6 +92,7 @@ S_render_node(cmark_node *node, cmark_event_type ev_type,
 	case CMARK_NODE_DOCUMENT:
 		break;
 
+    //cr just adds a new line at the end of html if it doesn't exist
 	case CMARK_NODE_BLOCK_QUOTE:
 		if (entering) {
 			cr(html);
@@ -257,9 +259,25 @@ S_render_node(cmark_node *node, cmark_event_type ev_type,
 			cmark_strbuf_puts(html, "</em>");
 		}
 		break;
+            
+    case CMARK_NODE_INLINE_LINK:
+        if(entering)
+        {
+            //the data for the inline link is stored as
+            //a literal in the node
+            cmark_strbuf_puts(html,"<a name = \"");
+            cmark_strbuf_puts(html,cmark_node_get_literal(node));
+            cmark_strbuf_puts(html,"\">");
+        }
+        else{
+            cmark_strbuf_puts(html,"</a>");
+        }
+        break;
+
 
 	case CMARK_NODE_LINK:
 		if (entering) {
+            //backslash escaping string
 			cmark_strbuf_puts(html, "<a href=\"");
 			escape_href(html, node->as.link.url.data,
 				    node->as.link.url.len);
@@ -275,7 +293,7 @@ S_render_node(cmark_node *node, cmark_event_type ev_type,
 			cmark_strbuf_puts(html, "</a>");
 		}
 		break;
-
+            
 	case CMARK_NODE_IMAGE:
 		if (entering) {
 			cmark_strbuf_puts(html, "<img src=\"");

@@ -106,6 +106,16 @@ int _scan_autolink_email(const unsigned char *p)
 */
 }
 
+//Try to scan for the pattern {#...}
+int _scan_autolink_inline(const unsigned char *p)
+{
+    const unsigned char *start = p;
+/*!re2c
+([#][a-zA-Z0-9_-]+){ return (p - start); }
+.? { return 0; }
+*/
+}
+
 // Try to match an HTML tag after first <, returning num of chars matched.
 int _scan_html_tag(const unsigned char *p)
 {
