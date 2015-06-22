@@ -19,7 +19,7 @@ VERSION?=$(SPECVERSION)
 RELEASE?=CommonMark-$(VERSION)
 INSTALL_PREFIX?=/usr/local
 
-.PHONY: all cmake_build spec leakcheck clean fuzztest dingus upload test update-site upload-site debug asan mingw archive bench astyle update-spec afl
+.PHONY: all cmake_build spec leakcheck clean fuzztest dingus upload test update-site upload-site debug ubsan asan mingw archive bench astyle update-spec afl
 
 all: cmake_build man/man3/cmark.3
 
@@ -45,6 +45,12 @@ debug:
 	mkdir -p $(BUILDDIR); \
 	cd $(BUILDDIR); \
 	cmake .. -DCMAKE_BUILD_TYPE=Debug; \
+	make
+
+ubsan:
+	mkdir -p $(BUILDDIR); \
+	cd $(BUILDDIR); \
+	cmake .. -DCMAKE_BUILD_TYPE=Ubsan; \
 	make
 
 asan:
@@ -88,12 +94,6 @@ archive:
 clean:
 	rm -rf $(BUILDDIR) $(MINGW_BUILDDIR) $(MINGW_INSTALLDIR)
 
-# We include html_unescape.h in the repository, so this shouldn't
-# normally need to be generated.
-$(SRCDIR)/html_unescape.h: $(SRCDIR)/html_unescape.gperf
-	gperf -L ANSI-C -I -t -N find_entity -H hash_entity -K entity -C -l \
-		-F ',{0}' --null-strings -m5 -P -Q entity_pool $< > $@
-
 # We include case_fold_switch.inc in the repository, so this shouldn't
 # normally need to be generated.
 $(SRCDIR)/case_fold_switch.inc: $(DATADIR)/CaseFolding-3.2.0.txt
@@ -111,6 +111,11 @@ $(SRCDIR)/scanners.c: $(SRCDIR)/scanners.re
 	esac
 	re2c --case-insensitive -b -i --no-generation-date -o $@ $<
 
+# We include entities.inc in the repository, so normally this
+# doesn't need to be regenerated:
+$(SRCDIR)/entities.inc: tools/make_entities_inc.py
+	python3 $< > $@
+
 update-spec:
 	curl 'https://raw.githubusercontent.com/jgm/CommonMark/master/spec.txt'\
  > $(SPEC)
@@ -119,10 +124,10 @@ test: $(SPEC) cmake_build
 	make -C $(BUILDDIR) test || (cat $(BUILDDIR)/Testing/Temporary/LastTest.log && exit 1)
 
 roundtrip_test: $(SPEC) cmake_build
-	python test/spec_tests.py --spec $< --prog test/roundtrip.sh
+	python3 test/spec_tests.py --spec $< --prog test/roundtrip.sh
 
 $(ALLTESTS): $(SPEC)
-	python test/spec_tests.py --spec $< --dump-tests | python -c 'import json; import sys; tests = json.loads(sys.stdin.read()); print("\n".join([test["markdown"] for test in tests]))' > $@
+	python3 test/spec_tests.py --spec $< --dump-tests | python3 -c 'import json; import sys; tests = json.loads(sys.stdin.read()); print("\n".join([test["markdown"] for test in tests]))' > $@
 
 leakcheck: $(ALLTESTS)
 	rc=0; \
@@ -155,7 +160,7 @@ bench: $(BENCHFILE)
 	  /usr/bin/env time -p $(PROG) </dev/null >/dev/null ; \
 	  /usr/bin/env time -p $(PROG) $< >/dev/null ; \
 		  done \
-	} 2>&1  | grep 'real' | awk '{print $$2}' | python 'bench/stats.py'
+	} 2>&1  | grep 'real' | awk '{print $$2}' | python3 'bench/stats.py'
 
 astyle:
 	astyle --style=linux -t -p -r  'src/*.c' --exclude=scanners.c
