@@ -126,7 +126,6 @@ void S_free_nodes(cmark_node *e)
 			break;
 		case NODE_LINK:
 		case NODE_IMAGE:
-        case NODE_INLINE_LINK:
 			cmark_chunk_free(&e->as.link.url);
 			cmark_chunk_free(&e->as.link.title);
 			break;

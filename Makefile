@@ -119,10 +119,10 @@ test: $(SPEC) cmake_build
 	make -C $(BUILDDIR) test || (cat $(BUILDDIR)/Testing/Temporary/LastTest.log && exit 1)
 
 roundtrip_test: $(SPEC) cmake_build
-	python3 test/spec_tests.py --spec $< --prog test/roundtrip.sh
+	python test/spec_tests.py --spec $< --prog test/roundtrip.sh
 
 $(ALLTESTS): $(SPEC)
-	python3 test/spec_tests.py --spec $< --dump-tests | python3 -c 'import json; import sys; tests = json.loads(sys.stdin.read()); print("\n".join([test["markdown"] for test in tests]))' > $@
+	python test/spec_tests.py --spec $< --dump-tests | python -c 'import json; import sys; tests = json.loads(sys.stdin.read()); print("\n".join([test["markdown"] for test in tests]))' > $@
 
 leakcheck: $(ALLTESTS)
 	rc=0; \
@@ -155,7 +155,7 @@ bench: $(BENCHFILE)
 	  /usr/bin/env time -p $(PROG) </dev/null >/dev/null ; \
 	  /usr/bin/env time -p $(PROG) $< >/dev/null ; \
 		  done \
-	} 2>&1  | grep 'real' | awk '{print $$2}' | python3 'bench/stats.py'
+	} 2>&1  | grep 'real' | awk '{print $$2}' | python 'bench/stats.py'
 
 astyle:
 	astyle --style=linux -t -p -r  'src/*.c' --exclude=scanners.c
