@@ -49,13 +49,14 @@ S_is_leaf(cmark_node *node)
 cmark_event_type
 cmark_iter_next(cmark_iter *iter)
 {
+
 	cmark_event_type  ev_type = iter->next.ev_type;
 	cmark_node       *node    = iter->next.node;
 
 	iter->cur.ev_type = ev_type;
 	iter->cur.node    = node;
-
-	if (ev_type == CMARK_EVENT_DONE) {
+    
+    if (ev_type == CMARK_EVENT_DONE) {
 		return ev_type;
 	}
 
@@ -81,7 +82,7 @@ cmark_iter_next(cmark_iter *iter)
 	} else {
 		assert(false);
 		iter->next.ev_type = CMARK_EVENT_DONE;
-		iter->next.node    = NULL;
+		iter->next.node = NULL;
 	}
 
 	return ev_type;

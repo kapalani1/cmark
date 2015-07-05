@@ -21,6 +21,13 @@ typedef enum {
 	FORMAT_COMMONMARK
 } writer_format;
 
+int can_include(char *filename)
+{
+    if(strstr(filename,".css")||strstr(filename,".js"))
+        return 1;
+    return 0;
+}
+
 void print_usage()
 {
 	printf("Usage:   cmark [FILE*]\n");
@@ -63,8 +70,10 @@ static void print_document(cmark_node *document, writer_format writer,
 
 int main(int argc, char *argv[])
 {
-	int i, numfps = 0;
-	int *files;
+    int i =1;
+	int numfps = 0;
+    int numincludes = 0;
+	int *files, *includes;
 	char buffer[4096];
 	cmark_parser *parser;
 	size_t bytes;
@@ -79,8 +88,8 @@ int main(int argc, char *argv[])
 #endif
 
 	files = (int *)malloc(argc * sizeof(*files));
-
-	for (i = 1; i < argc; i++) {
+    includes = (int *)malloc(argc *sizeof(*includes));
+	while(i<argc) {
 		if (strcmp(argv[i], "--version") == 0) {
 			printf("cmark %s", CMARK_VERSION_STRING);
 			printf(" - CommonMark converter\n(C) 2014, 2015 John MacFarlane\n");
@@ -112,7 +121,31 @@ int main(int argc, char *argv[])
 				        "--width requires an argument\n");
 				exit(1);
 			}
-		} else if ((strcmp(argv[i], "-t") == 0) ||
+		} else if((strcmp(argv[i],"-I")==0) || (strcmp(argv[i],"--include")==0))
+        {
+            i++;
+            if(i<argc)
+            {
+                while(i<argc)
+                {
+                    if(can_include(argv[i]))
+                    {
+                        includes[numincludes++] = i;
+                    }
+                    else
+                    {
+                        i-=1;
+                        break;
+                    }
+                    i++;
+                }
+            }
+            else
+            {
+                fprintf(stderr,"--includes requires atleast one file \n");
+            }
+        }
+        else if ((strcmp(argv[i], "-t") == 0) ||
 		           (strcmp(argv[i], "--to") == 0)) {
 			i += 1;
 			if (i < argc) {
@@ -139,6 +172,7 @@ int main(int argc, char *argv[])
 		} else { // treat as file argument
 			files[numfps++] = i;
 		}
+        i++;
 	}
     
 
@@ -176,8 +210,9 @@ int main(int argc, char *argv[])
 
 	start_timer();
 	document = cmark_parser_finish(parser);
+    cmark_parser_free(parser);
+    document = cmark_include_files(document,argv,includes,numincludes);
 	end_timer("finishing document");
-	cmark_parser_free(parser);
 
 	start_timer();
 	print_document(document, writer, options, width);
@@ -188,6 +223,7 @@ int main(int argc, char *argv[])
 	end_timer("free_blocks");
 
 	free(files);
+    free(includes);
 
 	return 0;
 }

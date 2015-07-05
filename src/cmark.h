@@ -37,12 +37,14 @@ typedef enum {
 	CMARK_NODE_DOCUMENT,
     /* New Node */
     CMARK_NODE_HEAD,
+    CMARK_NODE_BODY,
     /* New Node */
 	CMARK_NODE_BLOCK_QUOTE,
 	CMARK_NODE_LIST,
 	CMARK_NODE_ITEM,
 	CMARK_NODE_CODE_BLOCK,
 	CMARK_NODE_HTML,
+    CMARK_NODE_INCLUDE,
 	CMARK_NODE_PARAGRAPH,
 	CMARK_NODE_HEADER,
 	CMARK_NODE_HRULE,
@@ -59,7 +61,7 @@ typedef enum {
 	CMARK_NODE_EMPH,
 	CMARK_NODE_STRONG,
 	CMARK_NODE_LINK,
-    /* New Node */
+    /* New Nodes */
     CMARK_NODE_INLINE_LINK,
     /* New Node */
 	CMARK_NODE_IMAGE,
@@ -228,8 +230,7 @@ cmark_iter_get_root(cmark_iter *iter);
  */
 CMARK_EXPORT
 void
-cmark_iter_reset(cmark_iter *iter, cmark_node *current,
-                 cmark_event_type event_type);
+cmark_iter_reset(cmark_iter *iter, cmark_node *current, cmark_event_type event_type);
 
 /**
  * ## Accessors
@@ -466,6 +467,12 @@ cmark_node *cmark_parse_document(const char *buffer, size_t len, int options);
  */
 CMARK_EXPORT
 cmark_node *cmark_parse_file(FILE *f, int options);
+    
+CMARK_EXPORT
+cmark_node *cmark_add_to_head(cmark_node *node,char *filename);
+    
+CMARK_EXPORT
+cmark_node *cmark_include_files(cmark_node *node,char **argv,int *includes, int numincludes);
 
 /**
  * ## Rendering
@@ -563,6 +570,9 @@ extern const char cmark_version_string[];
 #define PERIOD_DELIM              CMARK_PERIOD_DELIM
 #define PAREN_DELIM               CMARK_PAREN_DELIM
 #define NODE_INLINE_LINK          CMARK_NODE_INLINE_LINK
+#define NODE_INCLUDE              CMARK_NODE_INCLUDE
+#define NODE_HEAD                 CMARK_NODE_HEAD
+#define NODE_BODY                 CMARK_NODE_BODY
 #endif
 
 #ifdef __cplusplus

@@ -866,6 +866,88 @@ finished:
     cmark_strbuf_clear(parser->curline);
 }
 
+cmark_node *find_first_non_include(cmark_node *document)
+{
+    cmark_iter *iter = cmark_iter_new(document);
+    cmark_event_type ev_type;
+    while((ev_type = cmark_iter_next(iter))!=CMARK_EVENT_DONE)
+    {
+        if(ev_type==CMARK_EVENT_ENTER)
+        {
+            cmark_node *node = cmark_iter_get_node(iter);
+            if(node->type!=CMARK_NODE_INCLUDE && node->type!=CMARK_NODE_DOCUMENT)
+            {
+                return node;
+            }
+        }
+    }
+    return NULL;
+}
+
+cmark_node *cmark_add_to_head(cmark_node *node,char *filename)
+{
+//    printf("node->type = %s\n",cmark_node_get_type_string(node));
+    if(node->type!=NODE_DOCUMENT)
+    {
+        fprintf(stderr,"Head can only be added to document node \n");
+        exit(1);
+    }
+    assert(node->type==NODE_DOCUMENT);
+    cmark_node *new_include = cmark_node_new(NODE_INCLUDE);
+//    printf("%p \n",new_include);
+//    printf("filename = %s \n",filename);
+    if(!cmark_node_set_literal(new_include,filename))
+    {
+        fprintf(stderr,"could not set literal \n");
+        exit(1);
+    }
+    if(node->first_child->type!=NODE_HEAD)
+    {
+//        printf("Doc did not have a head \n");
+        node->type = NODE_BODY;
+        cmark_node *new_root = cmark_node_new(NODE_DOCUMENT);
+        cmark_node_append_child(new_root,node);
+//        print_nodes(new_root);
+        new_root->start_line = node->start_line;
+        new_root->start_column = node->start_column;
+        new_root->end_line = node->end_line;
+        new_root->end_column = node->end_column;
+        new_root->open = node->open;
+        new_root->last_line_blank = node->last_line_blank;
+        cmark_node_prepend_child(new_root,cmark_node_new(NODE_HEAD));
+//        printf("*********\n");
+//        printf("YOOHOO!\n");
+        cmark_node_append_child(new_root->first_child,new_include);
+////        printf("Append returned %d \n",ret);
+////        print_nodes(new_root);
+////        printf("new root is of type %s \n",cmark_node_get_type_string(new_root));
+////        printf("parent is of type %s \n",cmark_node_get_type_string(node->parent));
+//        assert(new_root==node->parent);
+//        printf("Node is of type %s \n",cmark_node_get_type_string(node));
+        return node->parent;
+    }
+    else
+    {
+        cmark_node_append_child(node->first_child,new_include);
+//        printf("*********\n");
+//        print_nodes(new_root);
+        return node;
+    }
+
+}
+
+cmark_node *cmark_include_files(cmark_node *document,char **argv, int *includes, int numincludes)
+{
+    for(int i=0;i<numincludes;i++)
+    {
+        document =cmark_add_to_head(document,argv[includes[i]]);
+//        printf("TEMP\n");
+//        print_nodes(document);
+//        document = temp;
+    }
+    return document;
+}
+
 void print_nodes(cmark_node *root)
 {
     cmark_event_type ev_type;
@@ -873,7 +955,9 @@ void print_nodes(cmark_node *root)
     while((ev_type = cmark_iter_next(iter))!=CMARK_EVENT_DONE)
     {
         cmark_node *cur = cmark_iter_get_node(iter);
-        dbg_printf("Node is of type %s and contains %s of length %d \n",cmark_node_get_type_string(cur),cur->string_content.ptr,cur->string_content.size);
+        printf("Node is of type %s and event_type = %d \n",cmark_node_get_type_string(cur),ev_type);
+        if(cur->type==NODE_INCLUDE)
+            printf("%s \n",cmark_node_get_literal(cur));
     }
     
     cmark_iter_free(iter);

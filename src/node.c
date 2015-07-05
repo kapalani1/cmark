@@ -58,6 +58,10 @@ S_can_contain(cmark_node *node, cmark_node *child)
 
 	case CMARK_NODE_LIST:
 		return child->type == CMARK_NODE_ITEM;
+            
+    case CMARK_NODE_HEAD:
+    case CMARK_NODE_BODY:
+        return true;
 
 	case CMARK_NODE_PARAGRAPH:
 	case CMARK_NODE_HEADER:
@@ -209,6 +213,12 @@ cmark_node_get_type_string(cmark_node *node)
 		return "image";
     case CMARK_NODE_INLINE_LINK:
         return "inline_link";
+    case CMARK_NODE_HEAD:
+        return "head";
+    case CMARK_NODE_INCLUDE:
+        return "include";
+    case CMARK_NODE_BODY:
+        return "body";
 	}
 
 	return "<unknown>";
@@ -297,6 +307,7 @@ cmark_node_get_literal(cmark_node *node)
 	case NODE_INLINE_HTML:
     case NODE_CODE:
     case NODE_INLINE_LINK:
+    case NODE_INCLUDE:
 		return cmark_chunk_to_cstr(&node->as.literal);
 
 	case NODE_CODE_BLOCK:
@@ -322,6 +333,7 @@ cmark_node_set_literal(cmark_node *node, const char *content)
 	case NODE_INLINE_HTML:
     case NODE_CODE:
     case NODE_INLINE_LINK:
+    case NODE_INCLUDE:
 		cmark_chunk_set_cstr(&node->as.literal, content);
 		return 1;
 
@@ -750,8 +762,7 @@ cmark_node_prepend_child(cmark_node *node, cmark_node *child)
 	if (!S_can_contain(node, child)) {
 		return 0;
 	}
-
-	S_node_unlink(child);
+    S_node_unlink(child);
 
 	cmark_node *old_first_child = node->first_child;
 
@@ -776,8 +787,7 @@ cmark_node_append_child(cmark_node *node, cmark_node *child)
 	if (!S_can_contain(node, child)) {
 		return 0;
 	}
-
-	S_node_unlink(child);
+    S_node_unlink(child);
 
 	cmark_node *old_last_child = node->last_child;
 

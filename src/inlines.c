@@ -834,7 +834,6 @@ static cmark_node* handle_close_curly_brace(subject* subj,cmark_node* parent)
 // Return a link, an image, or a literal close bracket.
 static cmark_node* handle_close_bracket(subject* subj, cmark_node *parent)
 {
-    printf("Encountered ]");
 	int initial_pos;
 	int starturl, endurl, starttitle, endtitle, endall;
 	int n;
@@ -1116,7 +1115,6 @@ static int parse_inline(subject* subj, cmark_node * parent, int options)
 		new_inl = handle_period(subj, options & CMARK_OPT_SMART);
 		break;
 	case '[':
-        printf("Encountered [ \n");
 		advance(subj);
 		new_inl = make_str(cmark_chunk_literal("["));
 		push_delimiter(subj, '[', true, false, new_inl);

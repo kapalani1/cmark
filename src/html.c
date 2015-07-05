@@ -313,8 +313,45 @@ S_render_node(cmark_node *node, cmark_event_type ev_type,
 			cmark_strbuf_puts(html, "\" />");
 		}
 		break;
-
-	default:
+    case CMARK_NODE_HEAD:
+        if(entering)
+        {
+            cmark_strbuf_puts(html,"<head>\n");
+        }
+        else
+        {
+            cmark_strbuf_puts(html,"</head>\n");
+        }
+        break;
+    case CMARK_NODE_INCLUDE:
+        if(entering)
+        {
+            if(strstr(cmark_node_get_literal(node),".css"))
+                cmark_strbuf_puts(html,"<link rel=\"stylesheet\" type = \"text/css\" href=\"");
+            else
+                cmark_strbuf_puts(html,"<script src = \"");
+            cmark_strbuf_puts(html,cmark_node_get_literal(node));
+            cmark_strbuf_putc(html,'"');
+        }
+        else
+        {
+            if(strstr(cmark_node_get_literal(node),".css"))
+                cmark_strbuf_puts(html,">\n");
+            else
+                cmark_strbuf_puts(html,"</script>\n");
+        }
+        break;
+    case CMARK_NODE_BODY:
+        if(entering)
+        {
+            cmark_strbuf_puts(html,"<body>\n");
+        }
+        else
+        {
+            cmark_strbuf_puts(html,"</body>\n");
+        }
+        break;
+    default:
 		assert(false);
 		break;
 	}
