@@ -124,6 +124,7 @@ int main(int argc, char *argv[])
 		} else if((strcmp(argv[i],"-I")==0) || (strcmp(argv[i],"--include")==0))
         {
             i++;
+            int start = i;
             if(i<argc)
             {
                 while(i<argc)
@@ -134,6 +135,12 @@ int main(int argc, char *argv[])
                     }
                     else
                     {
+                        if(i==start)
+                        {
+                            fprintf(stderr,"--includes requires atleast one file \n");
+                            exit(1);
+                        }
+
                         i-=1;
                         break;
                     }
@@ -143,6 +150,7 @@ int main(int argc, char *argv[])
             else
             {
                 fprintf(stderr,"--includes requires atleast one file \n");
+                exit(1);
             }
         }
         else if ((strcmp(argv[i], "-t") == 0) ||
