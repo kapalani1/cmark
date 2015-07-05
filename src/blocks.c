@@ -195,7 +195,6 @@ static int break_out_of_lists(cmark_parser *parser, cmark_node ** bptr)
 static cmark_node*
 finalize(cmark_parser *parser, cmark_node* b)
 {
-    printf("Calling finalize with node = %s containing %s \n",cmark_node_get_type_string(b),b->string_content.ptr);
     int firstlinelen;
     int pos;
     cmark_node* item;
@@ -227,16 +226,12 @@ finalize(cmark_parser *parser, cmark_node* b)
         case NODE_PARAGRAPH:
             while (cmark_strbuf_at(&b->string_content, 0) == '[' &&
                    (pos = cmark_parse_reference_inline(&b->string_content, parser->refmap))) {
-                printf("pos = %d \n",pos);
-                printf("Trying to parse link label \n");
                 cmark_strbuf_drop(&b->string_content, pos);
             }
             if (is_blank(&b->string_content, 0)) {
-                printf("Blank Line \n");
                 // remove blank node (former reference def)
                 cmark_node_free(b);
             }
-            printf("Nothing matched \n");
             break;
             
         case NODE_CODE_BLOCK:
@@ -297,10 +292,8 @@ finalize(cmark_parser *parser, cmark_node* b)
             break;
             
         default:
-            printf("Entered default case \n");
             break;
     }
-    printf("returning parent \n");
     return parent;
 }
 
@@ -432,7 +425,6 @@ static cmark_node *finalize_document(cmark_parser *parser)
     }
     
     finalize(parser, parser->root);
-    printf("Finished finalizing \n");
     process_inlines(parser->root, parser->refmap, parser->options);
     
     return parser->root;
@@ -480,7 +472,6 @@ static void
 S_parser_feed(cmark_parser *parser, const unsigned char *buffer, size_t len,
               bool eof)
 {
-    dbg_printf("Line length = %zu \n",len);
     const unsigned char *end = buffer + len;
     
     while (buffer < end) {
@@ -549,9 +540,6 @@ S_process_line(cmark_parser *parser, const unsigned char *buffer, size_t bytes)
     
     //utf8proc_detab will replace tabs with 4 spaces and add the string in buffer to parser->curline
     utf8proc_detab(parser->curline, buffer, bytes);
-    printf("Entered S_process_line \n");
-    printf("Curline = %s of size %d \n",parser->curline->ptr,parser->curline->size);
-    
     // Add a newline to the end if not present:
     // TODO this breaks abstraction:
     if (parser->curline->ptr[parser->curline->size - 1] != '\n') {
@@ -571,7 +559,6 @@ S_process_line(cmark_parser *parser, const unsigned char *buffer, size_t bytes)
     //enter this while loop if you are trying to match the current line to something that was left abruptly at the end of the last line but can continue with the new line like a blockquote or a list marker. Keep backing up till you find a match. Worst case you will go upto document
     
     while (container->last_child && container->last_child->open) {
-        printf("Entered while loop \n");
         container = container->last_child;
         
         first_nonspace = offset;
@@ -651,8 +638,6 @@ S_process_line(cmark_parser *parser, const unsigned char *buffer, size_t bytes)
             }
             
         } else if (container->type == NODE_PARAGRAPH) {
-            printf("Came here \n");
-            
             if (blank) {
                 all_matched = false;
             }
@@ -795,7 +780,6 @@ S_process_line(cmark_parser *parser, const unsigned char *buffer, size_t bytes)
                    }
         
         if (accepts_lines(container->type)) {
-            printf("Accepts lines so breaking \n");
             // if it's a line container, it can't contain other containers
             break;
         }
@@ -813,7 +797,6 @@ S_process_line(cmark_parser *parser, const unsigned char *buffer, size_t bytes)
     blank = peek_at(&input, first_nonspace) == '\n';
     
     if (blank && container->last_child) {
-        printf("Setting last line blank \n");
         container->last_child->last_line_blank = true;
     }
     
@@ -841,11 +824,9 @@ S_process_line(cmark_parser *parser, const unsigned char *buffer, size_t bytes)
         !blank &&
         parser->current->type == NODE_PARAGRAPH &&
         cmark_strbuf_len(&parser->current->string_content) > 0) {
-        printf("Entered this IF statement \n");
         add_line(parser->current, &input, offset);
         
     } else { // not a lazy continuation
-        printf("Atleast here \n");
         // finalize any blocks that were not matched and set cur to container:
         while (parser->current != last_matched_container) {
             parser->current = finalize(parser, parser->current);
@@ -858,7 +839,6 @@ S_process_line(cmark_parser *parser, const unsigned char *buffer, size_t bytes)
             add_line(container, &input, offset);
             
         } else if (blank) {
-            printf("Blank line so doing nothing \n");
             // ??? do nothing
             
         } else if (accepts_lines(container->type)) {
@@ -867,11 +847,9 @@ S_process_line(cmark_parser *parser, const unsigned char *buffer, size_t bytes)
                 container->as.header.setext == false) {
                 chop_trailing_hashtags(&input);
             }
-            printf("added line to container \n");
             add_line(container, &input, first_nonspace);
             
         } else {
-            printf("Creating paragraph container \n");
             // create paragraph container for line
             container = add_child(parser, container, NODE_PARAGRAPH, first_nonspace + 1);
             add_line(container, &input, first_nonspace);
@@ -881,7 +859,6 @@ S_process_line(cmark_parser *parser, const unsigned char *buffer, size_t bytes)
         parser->current = container;
     }
 finished:
-    printf("Entered finished block \n");
     parser->last_line_length = parser->curline->size -
     (parser->curline->ptr[parser->curline->size - 1] == '\n' ?
      1 : 0);
@@ -909,8 +886,6 @@ cmark_node *cmark_parser_finish(cmark_parser *parser)
                        parser->linebuf->size);
         cmark_strbuf_clear(parser->linebuf);
     }
-    printf("About to finalize doc \n");
-    print_nodes(parser->root);
     finalize_document(parser);
     
     if (parser->options & CMARK_OPT_NORMALIZE) {

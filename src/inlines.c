@@ -917,10 +917,8 @@ static cmark_node* handle_close_bracket(subject* subj, cmark_node *parent)
 	raw_label = cmark_chunk_literal("");
 	found_label = link_label(subj, &raw_label);
 	if (!found_label || raw_label.len == 0) {
-        printf("Did not find label \n");
 		cmark_chunk_free(&raw_label);
 		raw_label = cmark_chunk_dup(&subj->input, opener->position,initial_pos - opener->position - 1);
-        printf("raw_label contains %s \n",raw_label.data);
 	}
 
 	if (!found_label) {
@@ -928,7 +926,6 @@ static cmark_node* handle_close_bracket(subject* subj, cmark_node *parent)
 		// to before the spaces we skipped.
 		subj->pos = initial_pos;
 	}
-    printf("raw_label = %s \n",raw_label.data);
 	ref = cmark_reference_lookup(subj->refmap, &raw_label);
 	cmark_chunk_free(&raw_label);
 
@@ -941,7 +938,6 @@ static cmark_node* handle_close_bracket(subject* subj, cmark_node *parent)
 	}
 
 noMatch:
-    printf("Did not match a label \n");
 	// If we fall through to here, it means we didn't match a link:
 	remove_delimiter(subj, opener);  // remove this opener from delimiter list
 	subj->pos = initial_pos;
@@ -1083,7 +1079,6 @@ static int subject_find_special_char(subject *subj, int options)
 // Return 0 if no inline can be parsed, 1 otherwise.
 static int parse_inline(subject* subj, cmark_node * parent, int options)
 {
-    printf("In my function \n");
 	cmark_node* new_inl = NULL;
 	cmark_chunk contents;
 	unsigned char c;
@@ -1171,15 +1166,15 @@ static int parse_inline(subject* subj, cmark_node * parent, int options)
 	if (new_inl != NULL) {
         cmark_node_append_child(parent, new_inl);
 	}
-    cmark_iter *iter = cmark_iter_new(parent);
-    cmark_event_type ev_type;
-    printf("TREE \n");
-    while((ev_type = cmark_iter_next(iter)!=CMARK_EVENT_DONE))
-    {
-        cmark_node *cur = cmark_iter_get_node(iter);
-        printf("node is of type %s and contains %s \n",cmark_node_get_type_string(cur),cur->as.literal.data);
-      }
-    cmark_iter_free(iter);
+//    cmark_iter *iter = cmark_iter_new(parent);
+//    cmark_event_type ev_type;
+//    printf("TREE \n");
+//    while((ev_type = cmark_iter_next(iter)!=CMARK_EVENT_DONE))
+//    {
+//        cmark_node *cur = cmark_iter_get_node(iter);
+//        printf("node is of type %s and contains %s \n",cmark_node_get_type_string(cur),cur->as.literal.data);
+//      }
+//    cmark_iter_free(iter);
 	return 1;
 }
 
@@ -1228,13 +1223,10 @@ int cmark_parse_reference_inline(cmark_strbuf *input, cmark_reference_map *refma
     {
 		return 0;
     }
-    printf("Parsed label and it contains %s of length = %d \n",lab.data,lab.len);
-    printf("Subject contains %s and pos = %d \n",subj.input.data,subj.pos);
 	// colon:
 	if (peek_char(&subj) == ':') {
 		advance(&subj);
 	} else {
-        printf("Did not find colon so returning \n");
 		return 0;
 	}
 
@@ -1269,7 +1261,6 @@ int cmark_parse_reference_inline(cmark_strbuf *input, cmark_reference_map *refma
 		return 0;
 	}
 	// insert reference into refmap
-    printf("adding the following reference to the refmap: label = %s url = %s title = %s \n",lab.data,url.data,title.data);
 	cmark_reference_create(refmap, &lab, &url, &title);
     return subj.pos;
 }
