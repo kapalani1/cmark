@@ -35,6 +35,9 @@ typedef enum {
 
 	/* Block */
 	CMARK_NODE_DOCUMENT,
+    /* New Node */
+    CMARK_NODE_HEAD,
+    /* New Node */
 	CMARK_NODE_BLOCK_QUOTE,
 	CMARK_NODE_LIST,
 	CMARK_NODE_ITEM,

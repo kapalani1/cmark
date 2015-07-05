@@ -43,6 +43,7 @@ static void
 S_render_sourcepos(cmark_node *node, cmark_strbuf *html, int options)
 {
 	if (CMARK_OPT_SOURCEPOS & options) {
+        printf("Options matched\n");
 		cmark_strbuf_printf(html, " data-sourcepos=\"%d:%d-%d:%d\"",
 		                    cmark_node_get_start_line(node),
 		                    cmark_node_get_start_column(node),

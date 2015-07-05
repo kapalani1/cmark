@@ -156,8 +156,7 @@ static cmark_chunk chunk_clone(cmark_chunk *src)
        return c;
 }
 
-static void subject_from_buf(subject *e, cmark_strbuf *buffer,
-                             cmark_reference_map *refmap)
+static void subject_from_buf(subject *e, cmark_strbuf *buffer,cmark_reference_map *refmap)
 {
 	e->input.data = buffer->ptr;
 	e->input.len = buffer->size;
@@ -835,6 +834,7 @@ static cmark_node* handle_close_curly_brace(subject* subj,cmark_node* parent)
 // Return a link, an image, or a literal close bracket.
 static cmark_node* handle_close_bracket(subject* subj, cmark_node *parent)
 {
+    printf("Encountered ]");
 	int initial_pos;
 	int starturl, endurl, starttitle, endtitle, endall;
 	int n;
@@ -917,17 +917,18 @@ static cmark_node* handle_close_bracket(subject* subj, cmark_node *parent)
 	raw_label = cmark_chunk_literal("");
 	found_label = link_label(subj, &raw_label);
 	if (!found_label || raw_label.len == 0) {
+        printf("Did not find label \n");
 		cmark_chunk_free(&raw_label);
-		raw_label = cmark_chunk_dup(&subj->input, opener->position,
-		                            initial_pos - opener->position - 1);
+		raw_label = cmark_chunk_dup(&subj->input, opener->position,initial_pos - opener->position - 1);
+        printf("raw_label contains %s \n",raw_label.data);
 	}
 
 	if (!found_label) {
 		// If we have a shortcut reference link, back up
-		// to before the spacse we skipped.
+		// to before the spaces we skipped.
 		subj->pos = initial_pos;
 	}
-
+    printf("raw_label = %s \n",raw_label.data);
 	ref = cmark_reference_lookup(subj->refmap, &raw_label);
 	cmark_chunk_free(&raw_label);
 
@@ -940,6 +941,7 @@ static cmark_node* handle_close_bracket(subject* subj, cmark_node *parent)
 	}
 
 noMatch:
+    printf("Did not match a label \n");
 	// If we fall through to here, it means we didn't match a link:
 	remove_delimiter(subj, opener);  // remove this opener from delimiter list
 	subj->pos = initial_pos;
@@ -1063,10 +1065,25 @@ static int subject_find_special_char(subject *subj, int options)
 	return subj->input.len;
 }
 
+//void print_nodes(cmark_node *root)
+//{
+//    cmark_event_type ev_type;
+//    cmark_iter *iter = cmark_iter_new(root);
+//    while((ev_type = cmark_iter_next(iter))!=CMARK_EVENT_DONE)
+//    {
+//        cmark_node *cur = cmark_iter_get_node(iter);
+//        printf("Node is of type %s and the contains data %s \n",cmark_node_get_type_string(cur),cur->as.literal.data);
+//    }
+//    
+//    cmark_iter_free(iter);
+//}
+
+
 // Parse an inline, advancing subject, and add it as a child of parent.
 // Return 0 if no inline can be parsed, 1 otherwise.
 static int parse_inline(subject* subj, cmark_node * parent, int options)
 {
+    printf("In my function \n");
 	cmark_node* new_inl = NULL;
 	cmark_chunk contents;
 	unsigned char c;
@@ -1104,6 +1121,7 @@ static int parse_inline(subject* subj, cmark_node * parent, int options)
 		new_inl = handle_period(subj, options & CMARK_OPT_SMART);
 		break;
 	case '[':
+        printf("Encountered [ \n");
 		advance(subj);
 		new_inl = make_str(cmark_chunk_literal("["));
 		push_delimiter(subj, '[', true, false, new_inl);
@@ -1148,12 +1166,20 @@ static int parse_inline(subject* subj, cmark_node * parent, int options)
 		if (peek_char(subj) == '\n') {
 			cmark_chunk_rtrim(&contents);
 		}
-
 		new_inl = make_str(contents);
 	}
 	if (new_inl != NULL) {
         cmark_node_append_child(parent, new_inl);
 	}
+    cmark_iter *iter = cmark_iter_new(parent);
+    cmark_event_type ev_type;
+    printf("TREE \n");
+    while((ev_type = cmark_iter_next(iter)!=CMARK_EVENT_DONE))
+    {
+        cmark_node *cur = cmark_iter_get_node(iter);
+        printf("node is of type %s and contains %s \n",cmark_node_get_type_string(cur),cur->as.literal.data);
+      }
+    cmark_iter_free(iter);
 	return 1;
 }
 
@@ -1162,7 +1188,7 @@ extern void cmark_parse_inlines(cmark_node* parent, cmark_reference_map *refmap,
 {
 	subject subj;
 	subject_from_buf(&subj, &parent->string_content, refmap);
-
+    //parse inline parses special character groups at a tme so [,],{,} and other special characters are parsed as only single characters when parse_inline is called
 	while (!is_eof(&subj) && parse_inline(&subj, parent, options)) ;
 
 	process_emphasis(&subj, NULL);
@@ -1197,13 +1223,18 @@ int cmark_parse_reference_inline(cmark_strbuf *input, cmark_reference_map *refma
 	subject_from_buf(&subj, input, NULL);
 
 	// parse label:
+    //will parse only the stuff between [Link Label]
 	if (!link_label(&subj, &lab))
+    {
 		return 0;
-
+    }
+    printf("Parsed label and it contains %s of length = %d \n",lab.data,lab.len);
+    printf("Subject contains %s and pos = %d \n",subj.input.data,subj.pos);
 	// colon:
 	if (peek_char(&subj) == ':') {
 		advance(&subj);
 	} else {
+        printf("Did not find colon so returning \n");
 		return 0;
 	}
 
@@ -1238,6 +1269,7 @@ int cmark_parse_reference_inline(cmark_strbuf *input, cmark_reference_map *refma
 		return 0;
 	}
 	// insert reference into refmap
+    printf("adding the following reference to the refmap: label = %s url = %s title = %s \n",lab.data,url.data,title.data);
 	cmark_reference_create(refmap, &lab, &url, &title);
-	return subj.pos;
+    return subj.pos;
 }
