@@ -219,7 +219,7 @@ int main(int argc, char *argv[])
 	start_timer();
 	document = cmark_parser_finish(parser);
     cmark_parser_free(parser);
-    document = cmark_include_files(document,argv,includes,numincludes);
+    cmark_include_files(document,argv,includes,numincludes);
 	end_timer("finishing document");
 
 	start_timer();

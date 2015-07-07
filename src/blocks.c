@@ -433,6 +433,40 @@ static int lists_match(cmark_list *list_data, cmark_list *item_data)
             list_data->bullet_char == item_data->bullet_char);
 }
 
+//This function will encompass everything except the head node inside a document node and return a new node if a head node exists. Otherwise it will return the old node
+cmark_node *add_body(cmark_node *root)
+{
+    if(root->type!=NODE_DOCUMENT)
+    {
+        fprintf(stderr,"Body can only be added to document node \n");
+        exit(1);
+    }
+    assert(root->type==NODE_DOCUMENT);
+    if(root->first_child->type==NODE_HEAD)
+    {
+        print_nodes(root);
+        cmark_node *head = root->first_child;
+        cmark_node_unlink(root->first_child);
+        root->type = NODE_BODY;
+        cmark_node *new_root = cmark_node_new(NODE_DOCUMENT);
+        cmark_node_append_child(new_root,root);
+        //reset the parameters of the old document
+        new_root->start_line = root->start_line;
+        new_root->start_column = root->start_column;
+        new_root->end_line = root->end_line;
+        new_root->end_column = root->end_column;
+        new_root->open = root->open;
+        new_root->last_line_blank = root->last_line_blank;
+        cmark_node_prepend_child(new_root,head);
+        return root->parent;
+    }
+    else
+    {
+        return root;
+    }
+    
+}
+
 
 static cmark_node *finalize_document(cmark_parser *parser)
 {
@@ -441,6 +475,8 @@ static cmark_node *finalize_document(cmark_parser *parser)
     }
     finalize(parser, parser->root);
     process_inlines(parser->root, parser->refmap, parser->options);
+    
+    parser->root = add_body(parser->root);
     
     return parser->root;
 }
@@ -950,7 +986,7 @@ void cmark_add_to_head(cmark_node *node,char *filename)
 
 }
 
-cmark_node *cmark_include_files(cmark_node *document,char **argv, int *includes, int numincludes)
+void cmark_include_files(cmark_node *document,char **argv, int *includes, int numincludes)
 {
     for(int i=0;i<numincludes;i++)
     {
@@ -959,7 +995,6 @@ cmark_node *cmark_include_files(cmark_node *document,char **argv, int *includes,
 //        print_nodes(document);
 //        document = temp;
     }
-    return document;
 }
 
 void print_nodes(cmark_node *root)
