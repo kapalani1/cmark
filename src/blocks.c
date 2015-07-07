@@ -224,13 +224,28 @@ finalize(cmark_parser *parser, cmark_node* b)
     
     switch (b->type) {
         case NODE_PARAGRAPH:
-            while (cmark_strbuf_at(&b->string_content, 0) == '[' &&
-                   (pos = cmark_parse_reference_inline(&b->string_content, parser->refmap))) {
-                cmark_strbuf_drop(&b->string_content, pos);
+            if(cmark_strbuf_at(&b->string_content,0)=='[')
+            {
+                while (cmark_strbuf_at(&b->string_content, 0) == '[' &&
+                       (pos = cmark_parse_reference_inline(&b->string_content, parser->refmap))) {
+                    cmark_strbuf_drop(&b->string_content, pos);
+                }
+                if (is_blank(&b->string_content, 0)) {
+                    // remove blank node (former reference def)
+                    cmark_node_free(b);
+                }
             }
-            if (is_blank(&b->string_content, 0)) {
-                // remove blank node (former reference def)
-                cmark_node_free(b);
+            else if(cmark_strbuf_at(&b->string_content,0)=='<' && cmark_strbuf_at(&b->string_content,1)=='<')
+            {
+                while(cmark_strbuf_at(&b->string_content,0)=='<' && cmark_strbuf_at(&b->string_content,1)=='<' && (pos = cmark_parse_include_inline(&b->string_content,parser)))
+                {
+//                    printf("I CAME HERE \n");
+                    cmark_strbuf_drop(&b->string_content,pos);
+                }
+                if(is_blank(&b->string_content,0))
+                {
+                    cmark_node_free(b);
+                }
             }
             break;
             
@@ -423,10 +438,9 @@ static cmark_node *finalize_document(cmark_parser *parser)
     while (parser->current != parser->root) {
         parser->current = finalize(parser, parser->current);
     }
-    
     finalize(parser, parser->root);
     process_inlines(parser->root, parser->refmap, parser->options);
-    
+
     return parser->root;
 }
 
@@ -855,7 +869,6 @@ S_process_line(cmark_parser *parser, const unsigned char *buffer, size_t bytes)
             add_line(container, &input, first_nonspace);
             
         }
-        
         parser->current = container;
     }
 finished:

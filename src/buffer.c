@@ -303,8 +303,9 @@ void cmark_strbuf_drop(cmark_strbuf *buf, int n)
 	if (n > 0) {
 		buf->size = buf->size - n;
 		if (buf->size)
+        {
 			memmove(buf->ptr, buf->ptr + n, buf->size);
-
+        }
 		buf->ptr[buf->size] = '\0';
 	}
 }

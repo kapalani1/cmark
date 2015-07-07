@@ -1262,3 +1262,60 @@ int cmark_parse_reference_inline(cmark_strbuf *input, cmark_reference_map *refma
 	cmark_reference_create(refmap, &lab, &url, &title);
     return subj.pos;
 }
+
+// Parse includes.  Assumes string begins with '<<' character.
+// Add an include node to the head of the document in case include is found
+// Return 0 if no reference found, otherwise position of subject
+// after include is parsed.
+int cmark_parse_include_inline(cmark_strbuf *input,cmark_parser *parser)
+{
+//    printf("input = %s with length = %d \n",input->ptr,input->size);
+//    printf("Inside cmark_parse_include_inline \n");
+    subject subj;
+//    printf("root is of type %s \n",cmark_node_get_type_string(parser->root));
+    cmark_chunk file;
+    char *filename;
+    
+    int matchlen = 0;
+    subject_from_buf(&subj,input,NULL);
+    spnl(&subj);
+    matchlen = scan_link_url(&subj.input, subj.pos);
+    if (matchlen) {
+//        printf("I matched %d chars\n",matchlen);
+        file = cmark_chunk_dup(&subj.input, subj.pos, matchlen);
+        subj.pos += matchlen;
+        //already will match 2 chars. So if we match less than 4 characters no way we can have <<...>>
+        if(file.len<4)
+        {
+            return 0;
+        }
+        if(file.data[file.len-1]=='>' && file.data[file.len-2]=='>')
+        {
+            filename = malloc(sizeof(char)*file.len);
+//            //advancing by 2 because don't want to include the << at the start
+            memcpy(filename,(char*)file.data+2,file.len-2);
+            filename[file.len-4] = '\0';
+//            printf("filename = %s \n",filename);
+//            printf("Perfect \n");
+            parser->root = cmark_add_to_head(parser->root,filename);
+        }
+        else
+        {
+            return 0;
+        }
+    } else {
+        return 0;
+    }
+    // parse final spaces and newline:
+    while (peek_char(&subj) == ' ') {
+        advance(&subj);
+    }
+    if (peek_char(&subj) == '\n') {
+        advance(&subj);
+    } else if (peek_char(&subj) != 0) {
+        return 0;
+    }
+    free(filename);
+    return subj.pos;
+}
+
