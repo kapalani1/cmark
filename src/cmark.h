@@ -469,7 +469,7 @@ CMARK_EXPORT
 cmark_node *cmark_parse_file(FILE *f, int options);
     
 CMARK_EXPORT
-cmark_node *cmark_add_to_head(cmark_node *node,char *filename);
+void cmark_add_to_head(cmark_node *node,char *filename);
     
 CMARK_EXPORT
 cmark_node *cmark_include_files(cmark_node *node,char **argv,int *includes, int numincludes);

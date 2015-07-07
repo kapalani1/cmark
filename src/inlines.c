@@ -1297,7 +1297,7 @@ int cmark_parse_include_inline(cmark_strbuf *input,cmark_parser *parser)
             filename[file.len-4] = '\0';
 //            printf("filename = %s \n",filename);
 //            printf("Perfect \n");
-            parser->root = cmark_add_to_head(parser->root,filename);
+            cmark_add_to_head(parser->root,filename);
         }
         else
         {

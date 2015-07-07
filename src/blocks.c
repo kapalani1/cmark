@@ -433,6 +433,7 @@ static int lists_match(cmark_list *list_data, cmark_list *item_data)
             list_data->bullet_char == item_data->bullet_char);
 }
 
+
 static cmark_node *finalize_document(cmark_parser *parser)
 {
     while (parser->current != parser->root) {
@@ -440,7 +441,7 @@ static cmark_node *finalize_document(cmark_parser *parser)
     }
     finalize(parser, parser->root);
     process_inlines(parser->root, parser->refmap, parser->options);
-
+    
     return parser->root;
 }
 
@@ -897,7 +898,7 @@ cmark_node *find_first_non_include(cmark_node *document)
     return NULL;
 }
 
-cmark_node *cmark_add_to_head(cmark_node *node,char *filename)
+void cmark_add_to_head(cmark_node *node,char *filename)
 {
 //    printf("node->type = %s\n",cmark_node_get_type_string(node));
     if(node->type!=NODE_DOCUMENT)
@@ -917,34 +918,34 @@ cmark_node *cmark_add_to_head(cmark_node *node,char *filename)
     if(node->first_child->type!=NODE_HEAD)
     {
 //        printf("Doc did not have a head \n");
-        node->type = NODE_BODY;
-        cmark_node *new_root = cmark_node_new(NODE_DOCUMENT);
-        cmark_node_append_child(new_root,node);
+//        node->type = NODE_BODY;
+//        cmark_node *new_root = cmark_node_new(NODE_DOCUMENT);
+//        cmark_node_append_child(new_root,node);
 //        print_nodes(new_root);
-        new_root->start_line = node->start_line;
-        new_root->start_column = node->start_column;
-        new_root->end_line = node->end_line;
-        new_root->end_column = node->end_column;
-        new_root->open = node->open;
-        new_root->last_line_blank = node->last_line_blank;
-        cmark_node_prepend_child(new_root,cmark_node_new(NODE_HEAD));
+//        new_root->start_line = node->start_line;
+//        new_root->start_column = node->start_column;
+//        new_root->end_line = node->end_line;
+//        new_root->end_column = node->end_column;
+//        new_root->open = node->open;
+//        new_root->last_line_blank = node->last_line_blank;
+        cmark_node_prepend_child(node,cmark_node_new(NODE_HEAD));
 //        printf("*********\n");
 //        printf("YOOHOO!\n");
-        cmark_node_append_child(new_root->first_child,new_include);
+        cmark_node_append_child(node->first_child,new_include);
 ////        printf("Append returned %d \n",ret);
 ////        print_nodes(new_root);
 ////        printf("new root is of type %s \n",cmark_node_get_type_string(new_root));
 ////        printf("parent is of type %s \n",cmark_node_get_type_string(node->parent));
 //        assert(new_root==node->parent);
 //        printf("Node is of type %s \n",cmark_node_get_type_string(node));
-        return node->parent;
+//        return node->parent;
     }
     else
     {
         cmark_node_append_child(node->first_child,new_include);
 //        printf("*********\n");
 //        print_nodes(new_root);
-        return node;
+//        return node;
     }
 
 }
@@ -953,7 +954,7 @@ cmark_node *cmark_include_files(cmark_node *document,char **argv, int *includes,
 {
     for(int i=0;i<numincludes;i++)
     {
-        document =cmark_add_to_head(document,argv[includes[i]]);
+        cmark_add_to_head(document,argv[includes[i]]);
 //        printf("TEMP\n");
 //        print_nodes(document);
 //        document = temp;

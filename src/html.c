@@ -327,11 +327,18 @@ S_render_node(cmark_node *node, cmark_event_type ev_type,
         if(entering)
         {
             if(strstr(cmark_node_get_literal(node),".css"))
+            {
                 cmark_strbuf_puts(html,"<link rel=\"stylesheet\" type = \"text/css\" href=\"");
+                cmark_strbuf_puts(html,cmark_node_get_literal(node));
+                cmark_strbuf_putc(html,'"');
+            }
             else
+            {
                 cmark_strbuf_puts(html,"<script src = \"");
-            cmark_strbuf_puts(html,cmark_node_get_literal(node));
-            cmark_strbuf_putc(html,'"');
+                cmark_strbuf_puts(html,cmark_node_get_literal(node));
+                cmark_strbuf_puts(html,"\">");
+            }
+            
         }
         else
         {
