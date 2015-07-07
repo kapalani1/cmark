@@ -444,7 +444,6 @@ cmark_node *add_body(cmark_node *root)
     assert(root->type==NODE_DOCUMENT);
     if(root->first_child->type==NODE_HEAD)
     {
-        print_nodes(root);
         cmark_node *head = root->first_child;
         cmark_node_unlink(root->first_child);
         root->type = NODE_BODY;
