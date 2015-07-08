@@ -53,6 +53,53 @@ static cmark_node* make_block(cmark_node_type tag, int start_line, int start_col
     return e;
 }
 
+void add_toc_item(cmark_node *toc,const char *label,char *link)
+{
+    cmark_node *new_item = cmark_node_new(NODE_ITEM);
+    cmark_node *par = cmark_node_new(NODE_PARAGRAPH);
+    cmark_node *url = cmark_node_new(NODE_LINK);
+    cmark_node *name = cmark_node_new(NODE_TEXT);
+    cmark_chunk *chunk = calloc(1,sizeof(cmark_chunk));
+    chunk->data = malloc(sizeof(char)*100);
+    sprintf((char*)chunk->data,"#%s",link);
+    //additional 1 for the extra #character
+    chunk->len = strlen(link)+1;
+    url->as.link.url = *chunk;
+    cmark_node_set_literal(name,label);
+    cmark_node_append_child(url,name);
+    cmark_node_append_child(par,url);
+    cmark_node_append_child(new_item,par);
+    cmark_node_append_child(toc,new_item);
+}
+
+void add_toc(cmark_node *toc, cmark_node *root)
+{
+    cmark_iter *iter = cmark_iter_new(root);
+    cmark_event_type ev_type;
+    while((ev_type = cmark_iter_next(iter))!=CMARK_EVENT_DONE)
+    {
+        if(ev_type==CMARK_EVENT_ENTER)
+        {
+            cmark_node *node = cmark_iter_get_node(iter);
+            if(node->type==NODE_HEADER)
+            {
+                char *url = (char *)cmark_node_get_user_data(node);
+                cmark_node *child = node->first_child;
+                while(child)
+                {
+                    if(child->type==NODE_TEXT)
+                    {
+                        add_toc_item(toc,cmark_node_get_literal(child),url);
+                        break;
+                    }
+                    child=child->next;
+                }
+            }
+        }
+    }
+    cmark_iter_free(iter);
+}
+
 // Create a root document node.
 static cmark_node* make_document()
 {
@@ -240,6 +287,17 @@ finalize(cmark_parser *parser, cmark_node* b)
                 while(cmark_strbuf_at(&b->string_content,0)=='<' && cmark_strbuf_at(&b->string_content,1)=='<' && (pos = cmark_parse_include_inline(&b->string_content,parser)))
                 {
 //                    printf("I CAME HERE \n");
+                    cmark_strbuf_drop(&b->string_content,pos);
+                }
+                if(is_blank(&b->string_content,0))
+                {
+                    cmark_node_free(b);
+                }
+            }
+            else if(cmark_strbuf_at(&b->string_content,0)=='{')
+            {
+                while(cmark_strbuf_at(&b->string_content,0)=='{' && (pos = cmark_parse_toc_inline(&b->string_content,parser)))
+                {
                     cmark_strbuf_drop(&b->string_content,pos);
                 }
                 if(is_blank(&b->string_content,0))
@@ -466,9 +524,52 @@ cmark_node *add_body(cmark_node *root)
     
 }
 
+void add_header_links(cmark_node *root)
+{
+    cmark_iter *iter = cmark_iter_new(root);
+    cmark_event_type ev_type;
+    int count = 0;
+    while((ev_type = cmark_iter_next(iter))!=CMARK_EVENT_DONE)
+          {
+              if(ev_type==CMARK_EVENT_ENTER)
+              {
+                  cmark_node *node = cmark_iter_get_node(iter);
+                  if(node->type==NODE_HEADER)
+                  {
+                      char *user_data = malloc(sizeof(char)*10);
+                      sprintf(user_data,"toc%d",count);
+                      cmark_node_set_user_data(node,user_data);
+                      count+=1;
+                  }
+              }
+          }
+    cmark_iter_free(iter);
+}
+
+
+cmark_node *toc_present(cmark_node *root)
+{
+    cmark_iter *iter = cmark_iter_new(root);
+    cmark_event_type ev_type;
+    while((ev_type = cmark_iter_next(iter))!=CMARK_EVENT_DONE)
+    {
+        if(ev_type==CMARK_EVENT_ENTER)
+        {
+            cmark_node *node = cmark_iter_get_node(iter);
+            if(node->type==NODE_TOC)
+            {
+                cmark_iter_free(iter);
+                return node;
+            }
+        }
+    }
+    cmark_iter_free(iter);
+    return NULL;
+}
 
 static cmark_node *finalize_document(cmark_parser *parser)
 {
+    cmark_node *toc;
     while (parser->current != parser->root) {
         parser->current = finalize(parser, parser->current);
     }
@@ -476,7 +577,11 @@ static cmark_node *finalize_document(cmark_parser *parser)
     process_inlines(parser->root, parser->refmap, parser->options);
     
     parser->root = add_body(parser->root);
-    
+    if((toc = toc_present(parser->root))!=NULL)
+    {
+        add_header_links(parser->root);
+        add_toc(toc,parser->root);
+    }
     return parser->root;
 }
 

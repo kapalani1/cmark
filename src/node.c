@@ -57,6 +57,7 @@ S_can_contain(cmark_node *node, cmark_node *child)
 		       && child->type != CMARK_NODE_ITEM;
 
 	case CMARK_NODE_LIST:
+    case CMARK_NODE_TOC:
 		return child->type == CMARK_NODE_ITEM;
             
     case CMARK_NODE_HEAD:
@@ -115,6 +116,13 @@ void S_free_nodes(cmark_node *e)
 	while (e != NULL) {
 		if (S_is_block(e)) {
 			cmark_strbuf_free(&e->string_content);
+            if(e->type==NODE_HEADER)
+            {
+                if(e->user_data!=NULL)
+                {
+                    free(e->user_data);
+                }
+            }
 		}
 		switch (e->type) {
 		case NODE_CODE_BLOCK:
@@ -126,6 +134,7 @@ void S_free_nodes(cmark_node *e)
 		case NODE_CODE:
 		case NODE_HTML:
         case NODE_INLINE_LINK:
+        case NODE_INCLUDE:
 			cmark_chunk_free(&e->as.literal);
 			break;
 		case NODE_LINK:
@@ -219,6 +228,8 @@ cmark_node_get_type_string(cmark_node *node)
         return "include";
     case CMARK_NODE_BODY:
         return "body";
+    case CMARK_NODE_TOC:
+        return "toc";
 	}
 
 	return "<unknown>";

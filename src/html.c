@@ -134,6 +134,17 @@ S_render_node(cmark_node *node, cmark_event_type ev_type,
 		}
 		break;
 	}
+    
+    case CMARK_NODE_TOC:
+        if(entering)
+        {
+            cmark_strbuf_puts(html,"<ol class=\"toc\">\n");
+        }
+        else
+        {
+            cmark_strbuf_puts(html,"</ol>\n");
+        }
+        break;
 
 	case CMARK_NODE_ITEM:
 		if (entering) {
@@ -152,6 +163,9 @@ S_render_node(cmark_node *node, cmark_event_type ev_type,
 			start_header[2] = '0' + node->as.header.level;
 			cmark_strbuf_puts(html, start_header);
 			S_render_sourcepos(node, html, options);
+            cmark_strbuf_puts(html," id=\"");
+            cmark_strbuf_puts(html,cmark_node_get_user_data(node));
+            cmark_strbuf_putc(html,'"');
 			cmark_strbuf_putc(html, '>');
 		} else {
 			end_header[3] = '0' + node->as.header.level;

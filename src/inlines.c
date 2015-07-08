@@ -1319,3 +1319,34 @@ int cmark_parse_include_inline(cmark_strbuf *input,cmark_parser *parser)
     return subj.pos;
 }
 
+// Parse table of contents.  Assumes string begins with '{' character.
+// Add a new table of contents node in case a toc is found
+// Return 0 if no reference found, otherwise position of subject
+// after toc is parsed.
+int cmark_parse_toc_inline(cmark_strbuf *input,cmark_parser *parser)
+{
+    subject subj;
+    int matchlen = 0;
+    subject_from_buf(&subj,input,NULL);
+    spnl(&subj);
+    matchlen = scan_toc_inline(&subj.input,subj.pos);
+    //scanning for { [whitespace] toc [whitespace] }. So if any more than 5 characters match, then we have encountered a table of contents node
+    if (matchlen>=5) {
+        subj.pos+=matchlen;
+        cmark_node_append_child(parser->current->parent,cmark_node_new(NODE_TOC));
+    }
+    else
+    {
+        return 0;
+    }
+    //  parse final spaces and newline:
+    while (peek_char(&subj) == ' ') {
+        advance(&subj);
+    }
+    if (peek_char(&subj) == '\n') {
+        advance(&subj);
+    } else if (peek_char(&subj) != 0) {
+        return 0;
+    }
+    return subj.pos;
+}

@@ -44,7 +44,10 @@ typedef enum {
 	CMARK_NODE_ITEM,
 	CMARK_NODE_CODE_BLOCK,
 	CMARK_NODE_HTML,
+    /* New Node */
     CMARK_NODE_INCLUDE,
+    CMARK_NODE_TOC,
+    /* New Node */
 	CMARK_NODE_PARAGRAPH,
 	CMARK_NODE_HEADER,
 	CMARK_NODE_HRULE,
@@ -573,6 +576,7 @@ extern const char cmark_version_string[];
 #define NODE_INCLUDE              CMARK_NODE_INCLUDE
 #define NODE_HEAD                 CMARK_NODE_HEAD
 #define NODE_BODY                 CMARK_NODE_BODY
+#define NODE_TOC                  CMARK_NODE_TOC
 #endif
 
 #ifdef __cplusplus

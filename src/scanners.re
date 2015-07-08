@@ -34,6 +34,8 @@ int _scan_at(int (*scanner)(const unsigned char *), cmark_chunk *c, int offset)
 
   blocktagname = 'article'|'header'|'aside'|'hgroup'|'iframe'|'blockquote'|'hr'|'body'|'li'|'map'|'button'|'object'|'canvas'|'ol'|'caption'|'output'|'col'|'p'|'colgroup'|'pre'|'dd'|'progress'|'div'|'section'|'dl'|'table'|'td'|'dt'|'tbody'|'embed'|'textarea'|'fieldset'|'tfoot'|'figcaption'|'th'|'figure'|'thead'|'footer'|'footer'|'tr'|'form'|'ul'|'h1'|'h2'|'h3'|'h4'|'h5'|'h6'|'video'|'script'|'style';
 
+  toc = 'toc';
+
   attributename = [a-zA-Z_:][a-zA-Z0-9:._-]*;
 
   unquotedvalue = [^\"'=<>`\x00]+;
@@ -112,6 +114,17 @@ int _scan_autolink_inline(const unsigned char *p)
     const unsigned char *start = p;
 /*!re2c
 ([#][a-zA-Z0-9_-]+){ return (p - start); }
+.? { return 0; }
+*/
+}
+
+//Try to scan for the pattern {toc}
+int _scan_toc_inline(const unsigned char *p)
+{
+    const unsigned char *marker = NULL;
+    const unsigned char *start = p;
+/*!re2c
+([{][ \t]*toc[ \t]*[}]){ return (p - start); }
 .? { return 0; }
 */
 }
