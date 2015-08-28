@@ -163,10 +163,13 @@ S_render_node(cmark_node *node, cmark_event_type ev_type,
 			start_header[2] = '0' + node->as.header.level;
 			cmark_strbuf_puts(html, start_header);
 			S_render_sourcepos(node, html, options);
-            cmark_strbuf_puts(html," id=\"");
-            cmark_strbuf_puts(html,cmark_node_get_user_data(node));
+            if(cmark_node_get_user_data(node)!=NULL)
+            {
+                cmark_strbuf_puts(html," id=\"");
+                cmark_strbuf_puts(html,cmark_node_get_user_data(node));
             cmark_strbuf_putc(html,'"');
-			cmark_strbuf_putc(html, '>');
+            }
+            cmark_strbuf_putc(html, '>');
 		} else {
 			end_header[3] = '0' + node->as.header.level;
 			cmark_strbuf_puts(html, end_header);
@@ -392,6 +395,7 @@ char *cmark_render_html(cmark_node *root, int options)
 
 	while ((ev_type = cmark_iter_next(iter)) != CMARK_EVENT_DONE) {
 		cur = cmark_iter_get_node(iter);
+        printf("Rendering node of type %s \n",cmark_node_get_type_string(cur));
 		S_render_node(cur, ev_type, &state, options);
 	}
 	result = (char *)cmark_strbuf_detach(&html);

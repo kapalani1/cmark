@@ -847,7 +847,6 @@ S_process_line(cmark_parser *parser, const unsigned char *buffer, size_t bytes)
         } else if ((matched = scan_atx_header_start(&input, first_nonspace))) {
             offset = first_nonspace + matched;
             container = add_child(parser, container, NODE_HEADER, offset + 1);
-            
             int hashpos = cmark_chunk_strchr(&input, '#', first_nonspace);
             int level = 0;
             
