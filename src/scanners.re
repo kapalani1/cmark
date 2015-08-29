@@ -124,7 +124,7 @@ int _scan_toc_inline(const unsigned char *p)
     const unsigned char *marker = NULL;
     const unsigned char *start = p;
 /*!re2c
-([{](spacechar*)toc(spacechar*)[}]){ return (p - start); }
+([{](spacechar*)toc([:][1-6])?(spacechar*)[}]){ return (p - start); }
 .? { return 0; }
 */
 }

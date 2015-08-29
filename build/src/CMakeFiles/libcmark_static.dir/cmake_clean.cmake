@@ -1,4 +1,4 @@
-file(REMOVE_RECURSE
+FILE(REMOVE_RECURSE
   "CMakeFiles/libcmark_static.dir/cmark.c.o"
   "CMakeFiles/libcmark_static.dir/node.c.o"
   "CMakeFiles/libcmark_static.dir/iterator.c.o"
@@ -21,6 +21,6 @@ file(REMOVE_RECURSE
 )
 
 # Per-language clean rules from dependency scanning.
-foreach(lang C)
-  include(CMakeFiles/libcmark_static.dir/cmake_clean_${lang}.cmake OPTIONAL)
-endforeach()
+FOREACH(lang C)
+  INCLUDE(CMakeFiles/libcmark_static.dir/cmake_clean_${lang}.cmake OPTIONAL)
+ENDFOREACH(lang)

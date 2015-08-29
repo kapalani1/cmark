@@ -74,7 +74,7 @@ void add_toc_item(cmark_node *toc,const char *label,char *link,int level)
     cmark_node_append_child(toc,new_item);
 }
 
-void add_toc(cmark_node *toc, cmark_node *root)
+void add_toc(cmark_node *toc, cmark_node *root,int maxDepth)
 {
     cmark_iter *iter = cmark_iter_new(root);
     cmark_event_type ev_type;
@@ -84,7 +84,7 @@ void add_toc(cmark_node *toc, cmark_node *root)
         if(ev_type==CMARK_EVENT_ENTER)
         {
             cmark_node *node = cmark_iter_get_node(iter);
-            if(node->type==NODE_HEADER)
+            if(node->type==NODE_HEADER && node->as.header.level <= maxDepth)
             {
                 level = node->as.header.level;
                 char *url = (char *)cmark_node_get_user_data(node);
@@ -528,7 +528,7 @@ cmark_node *add_body(cmark_node *root)
     
 }
 
-void add_header_links(cmark_node *root)
+void add_header_links(cmark_node *root,int maxDepth)
 {
     cmark_iter *iter = cmark_iter_new(root);
     cmark_event_type ev_type;
@@ -538,7 +538,7 @@ void add_header_links(cmark_node *root)
               if(ev_type==CMARK_EVENT_ENTER)
               {
                   cmark_node *node = cmark_iter_get_node(iter);
-                  if(node->type==NODE_HEADER)
+                  if(node->type==NODE_HEADER && node->as.header.level<=maxDepth)
                   {
                       char *user_data = malloc(sizeof(char)*40);
                       sprintf(user_data,"toc%d",count);
@@ -583,8 +583,13 @@ static cmark_node *finalize_document(cmark_parser *parser)
     parser->root = add_body(parser->root);
     if((toc = toc_present(parser->root))!=NULL)
     {
-        add_header_links(parser->root);
-        add_toc(toc,parser->root);
+        int maxDepth = atoi(cmark_node_get_user_data(toc));
+        if(maxDepth == -1)
+        {
+            maxDepth = 10;
+        }
+        add_header_links(parser->root,maxDepth);
+        add_toc(toc,parser->root,maxDepth);
     }
     return parser->root;
 }

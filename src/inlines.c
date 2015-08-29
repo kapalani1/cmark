@@ -1326,14 +1326,26 @@ int cmark_parse_include_inline(cmark_strbuf *input,cmark_parser *parser)
 int cmark_parse_toc_inline(cmark_strbuf *input,cmark_parser *parser)
 {
     subject subj;
+    cmark_chunk depth;
     int matchlen = 0;
+    int maxDepth = -1;
     subject_from_buf(&subj,input,NULL);
     spnl(&subj);
+    int pos;
     matchlen = scan_toc_inline(&subj.input,subj.pos);
     //scanning for { [whitespace] toc [whitespace] }. So if any more than 5 characters match, then we have encountered a table of contents node
     if (matchlen>=5) {
+        depth = cmark_chunk_dup(&subj.input, subj.pos, matchlen);
+        pos = cmark_chunk_strchr(&depth,':',0);
+        if(pos != depth.len)
+        {
+            maxDepth = (int)(depth.data[pos+1]-'0');
+        }
         subj.pos+=matchlen;
-        cmark_node_append_child(parser->current->parent,cmark_node_new(NODE_TOC));
+        cmark_node *toc = cmark_node_new(NODE_TOC);
+        toc->user_data = malloc(sizeof(char)*4);
+        sprintf(toc->user_data,"%d",maxDepth);
+        cmark_node_append_child(parser->current->parent,toc);
     }
     else
     {
