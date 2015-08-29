@@ -116,7 +116,7 @@ void S_free_nodes(cmark_node *e)
 	while (e != NULL) {
 		if (S_is_block(e)) {
 			cmark_strbuf_free(&e->string_content);
-            if(e->type==NODE_HEADER)
+            if(e->type==NODE_HEADER || e->type == NODE_PARAGRAPH)
             {
                 if(e->user_data!=NULL)
                 {

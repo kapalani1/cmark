@@ -28,6 +28,7 @@ static void escape_href(cmark_strbuf *dest, const unsigned char *source, int len
 	houdini_escape_href(dest, source, (size_t)length);
 }
 
+
 static inline void cr(cmark_strbuf *html)
 {
 	if (html->size && html->ptr[html->size - 1] != '\n')
@@ -37,6 +38,10 @@ static inline void cr(cmark_strbuf *html)
 struct render_state {
 	cmark_strbuf* html;
 	cmark_node *plain;
+    bool inside_toc;
+    int prev_level;
+    int open;
+    bool start;
 };
 
 static void
@@ -52,6 +57,13 @@ S_render_sourcepos(cmark_node *node, cmark_strbuf *html, int options)
 	}
 }
 
+static void render_list_normal(cmark_strbuf *html,cmark_node *node,int options)
+{
+    cmark_strbuf_puts(html, "<li");
+    S_render_sourcepos(node, html, options);
+    cmark_strbuf_putc(html, '>');
+}
+
 static int
 S_render_node(cmark_node *node, cmark_event_type ev_type,
               struct render_state *state, int options)
@@ -65,7 +77,8 @@ S_render_node(cmark_node *node, cmark_event_type ev_type,
 
 	bool entering = (ev_type == CMARK_EVENT_ENTER);
 
-	if (state->plain == node) { // back at original node
+	if (state->plain == node) {// back at original node
+        printf("Back at original node\n");
 		state->plain = NULL;
 	}
 
@@ -82,7 +95,6 @@ S_render_node(cmark_node *node, cmark_event_type ev_type,
 		case CMARK_NODE_SOFTBREAK:
 			cmark_strbuf_putc(html, ' ');
 			break;
-
 		default:
 			break;
 		}
@@ -139,21 +151,81 @@ S_render_node(cmark_node *node, cmark_event_type ev_type,
         if(entering)
         {
             cmark_strbuf_puts(html,"<ol class=\"toc\">\n");
+            state->inside_toc = true;
         }
         else
         {
+            cmark_strbuf_puts(html,"</li>\n");
+            if(state->open>0)
+            {
+                while(state->open)
+                {
+                    cmark_strbuf_puts(html,"</ol>\n</li>\n");
+                    state->open-=1;
+                }
+            }
             cmark_strbuf_puts(html,"</ol>\n");
+            state->inside_toc = false;
         }
         break;
 
 	case CMARK_NODE_ITEM:
 		if (entering) {
 			cr(html);
-			cmark_strbuf_puts(html, "<li");
-			S_render_sourcepos(node, html, options);
-			cmark_strbuf_putc(html, '>');
+            int level = atoi(cmark_node_get_user_data(node));
+            if(state->inside_toc)
+            {
+                if(level < state->prev_level)
+                {
+                    cmark_strbuf_puts(html,"</li>\n");
+                    int diff = state->prev_level - level;
+                    while(diff)
+                    {
+                        cmark_strbuf_puts(html,"</ol>\n</li>\n");
+                        diff-=1;
+                        state->open-=1;
+                    }
+                    state->prev_level = level;
+                    cmark_strbuf_puts(html,"<li>\n");
+                }
+                else if(level > state->prev_level)
+                {
+                    int diff = level - state->prev_level;
+                    while(diff)
+                    {
+//                        char *s = malloc(100);
+//                        sprintf(s,"diff = %d \n",diff);
+//                        cmark_strbuf_puts(html,s)
+                        cmark_strbuf_puts(html,"<ol>\n<li>\n");
+                        diff-=1;
+                        state->open+=1;
+                    }
+                    state->prev_level = level;
+                }
+                else
+                {
+                    if(state->start)
+                    {
+                        render_list_normal(html,node,options);
+                        state->start = false;
+                        break;
+                    }
+                    else
+                    {
+                        cmark_strbuf_puts(html,"</li>\n");
+                        render_list_normal(html,node,options);
+                    }
+                }
+            }
+            else
+            {
+                render_list_normal(html,node,options);
+            }
 		} else {
-			cmark_strbuf_puts(html, "</li>\n");
+            if(!state->inside_toc)
+            {
+                cmark_strbuf_puts(html, "</li>\n");
+            }
 		}
 		break;
 
@@ -390,12 +462,11 @@ char *cmark_render_html(cmark_node *root, int options)
 	cmark_strbuf html = GH_BUF_INIT;
 	cmark_event_type ev_type;
 	cmark_node *cur;
-	struct render_state state = { &html, NULL };
+	struct render_state state = { &html, NULL, false,1,0,true};
 	cmark_iter *iter = cmark_iter_new(root);
 
 	while ((ev_type = cmark_iter_next(iter)) != CMARK_EVENT_DONE) {
 		cur = cmark_iter_get_node(iter);
-        printf("Rendering node of type %s \n",cmark_node_get_type_string(cur));
 		S_render_node(cur, ev_type, &state, options);
 	}
 	result = (char *)cmark_strbuf_detach(&html);

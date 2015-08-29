@@ -53,7 +53,7 @@ static cmark_node* make_block(cmark_node_type tag, int start_line, int start_col
     return e;
 }
 
-void add_toc_item(cmark_node *toc,const char *label,char *link)
+void add_toc_item(cmark_node *toc,const char *label,char *link,int level)
 {
     cmark_node *new_item = cmark_node_new(NODE_ITEM);
     cmark_node *par = cmark_node_new(NODE_PARAGRAPH);
@@ -65,6 +65,8 @@ void add_toc_item(cmark_node *toc,const char *label,char *link)
     //additional 1 for the extra #character
     chunk->len = strlen(link)+1;
     url->as.link.url = *chunk;
+    new_item->user_data = malloc(sizeof(char)*40);
+    sprintf(new_item->user_data,"%d",level);
     cmark_node_set_literal(name,label);
     cmark_node_append_child(url,name);
     cmark_node_append_child(par,url);
@@ -76,6 +78,7 @@ void add_toc(cmark_node *toc, cmark_node *root)
 {
     cmark_iter *iter = cmark_iter_new(root);
     cmark_event_type ev_type;
+    int level;
     while((ev_type = cmark_iter_next(iter))!=CMARK_EVENT_DONE)
     {
         if(ev_type==CMARK_EVENT_ENTER)
@@ -83,13 +86,14 @@ void add_toc(cmark_node *toc, cmark_node *root)
             cmark_node *node = cmark_iter_get_node(iter);
             if(node->type==NODE_HEADER)
             {
+                level = node->as.header.level;
                 char *url = (char *)cmark_node_get_user_data(node);
                 cmark_node *child = node->first_child;
                 while(child)
                 {
                     if(child->type==NODE_TEXT)
                     {
-                        add_toc_item(toc,cmark_node_get_literal(child),url);
+                        add_toc_item(toc,cmark_node_get_literal(child),url,level);
                         break;
                     }
                     child=child->next;
@@ -536,7 +540,7 @@ void add_header_links(cmark_node *root)
                   cmark_node *node = cmark_iter_get_node(iter);
                   if(node->type==NODE_HEADER)
                   {
-                      char *user_data = malloc(sizeof(char)*10);
+                      char *user_data = malloc(sizeof(char)*40);
                       sprintf(user_data,"toc%d",count);
                       cmark_node_set_user_data(node,user_data);
                       count+=1;
