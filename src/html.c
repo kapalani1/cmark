@@ -78,7 +78,6 @@ S_render_node(cmark_node *node, cmark_event_type ev_type,
 	bool entering = (ev_type == CMARK_EVENT_ENTER);
 
 	if (state->plain == node) {// back at original node
-        printf("Back at original node\n");
 		state->plain = NULL;
 	}
 
