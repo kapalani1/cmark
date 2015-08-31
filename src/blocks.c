@@ -579,7 +579,6 @@ static cmark_node *finalize_document(cmark_parser *parser)
     }
     finalize(parser, parser->root);
     process_inlines(parser->root, parser->refmap, parser->options);
-    
     parser->root = add_body(parser->root);
     if((toc = toc_present(parser->root))!=NULL)
     {
@@ -1132,7 +1131,6 @@ cmark_node *cmark_parser_finish(cmark_parser *parser)
         cmark_strbuf_clear(parser->linebuf);
     }
     finalize_document(parser);
-    
     if (parser->options & CMARK_OPT_NORMALIZE) {
         cmark_consolidate_text_nodes(parser->root);
     }

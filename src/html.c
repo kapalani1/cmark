@@ -172,9 +172,9 @@ S_render_node(cmark_node *node, cmark_event_type ev_type,
 	case CMARK_NODE_ITEM:
 		if (entering) {
 			cr(html);
-            int level = atoi(cmark_node_get_user_data(node));
             if(state->inside_toc)
             {
+                int level = atoi(cmark_node_get_user_data(node));
                 if(level < state->prev_level)
                 {
                     cmark_strbuf_puts(html,"</li>\n");
