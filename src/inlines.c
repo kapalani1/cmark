@@ -804,6 +804,7 @@ static cmark_node* handle_close_curly_brace(subject* subj,cmark_node* parent)
         {
             break;
         }
+        opener = opener->previous;
     }
     if(opener == NULL)
     {
