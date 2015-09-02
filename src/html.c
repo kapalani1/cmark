@@ -57,6 +57,7 @@ S_render_sourcepos(cmark_node *node, cmark_strbuf *html, int options)
 	}
 }
 
+//utility function to render a list normally, not of the type toc
 static void render_list_normal(cmark_strbuf *html,cmark_node *node,int options)
 {
     cmark_strbuf_puts(html, "<li");
@@ -147,6 +148,31 @@ S_render_node(cmark_node *node, cmark_event_type ev_type,
 	}
     
     case CMARK_NODE_TOC:
+        //special case if rendering the list of type toc
+        /* the toc list is rendered as follows:
+            Suppose the text contained
+             <h1>h11</h1>
+                <h2>h21</h2>
+                    <h3>h31</h3>
+                <h2>h22</h2>
+             <h1>h12</h1>
+             
+             It will be rendered in html as nested ordered lists (ignoring the links)
+             <ol class = "toc">
+                <li><p>h11</p>
+                    <ol>
+                        <li><p>h21</p>
+                            <ol>
+                                <li><p>h31</p></li>
+                            </ol>
+                        </li>
+                        <li><p>h22</p></li>
+                    </ol>
+                </li>
+                <li><p>h12</p></li>
+            </ol>
+                     
+             */
         if(entering)
         {
             cmark_strbuf_puts(html,"<ol class=\"toc\">\n");
@@ -192,9 +218,6 @@ S_render_node(cmark_node *node, cmark_event_type ev_type,
                     int diff = level - state->prev_level;
                     while(diff)
                     {
-//                        char *s = malloc(100);
-//                        sprintf(s,"diff = %d \n",diff);
-//                        cmark_strbuf_puts(html,s)
                         cmark_strbuf_puts(html,"<ol>\n<li>\n");
                         diff-=1;
                         state->open+=1;

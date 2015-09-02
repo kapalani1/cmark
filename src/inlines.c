@@ -1334,7 +1334,7 @@ int cmark_parse_toc_inline(cmark_strbuf *input,cmark_parser *parser)
     spnl(&subj);
     int pos;
     matchlen = scan_toc_inline(&subj.input,subj.pos);
-    //scanning for { [whitespace] toc [whitespace] }. So if any more than 5 characters match, then we have encountered a table of contents node
+    //scanning for { [whitespace] toc [whitespace] }. So if any more than 5 characters match, then we might have encountered a table of contents node
     if (matchlen>=5) {
         depth = cmark_chunk_dup(&subj.input, subj.pos, matchlen);
         pos = cmark_chunk_strchr(&depth,':',0);

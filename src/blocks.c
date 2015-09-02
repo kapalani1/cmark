@@ -53,6 +53,18 @@ static cmark_node* make_block(cmark_node_type tag, int start_line, int start_col
     return e;
 }
 
+/* add_toc_item
+ params:
+ toc: te node that is of type toc
+ label: The text of the entry in the table of contents
+ link: the link to the header as a string
+ level: the level of the header */
+
+/* This function adds an item to the toc. The toc is essentially just like a ordered list, except it is of class toc so that people can customize it. This function adds children to the ordered list, by first creating a NODE_ITEM and populating it with the text of the item as a paragraph and the link of the item as a NODE_LINK. 
+ 
+    The user_data field of the node_item contains a string that specifies the level.
+    The paragraph node also has a child node which contains the url. The url is simply a string called #link and can be rendered normally as <a href = >
+ */
 void add_toc_item(cmark_node *toc,const char *label,char *link,int level)
 {
     cmark_node *new_item = cmark_node_new(NODE_ITEM);
@@ -74,6 +86,14 @@ void add_toc_item(cmark_node *toc,const char *label,char *link,int level)
     cmark_node_append_child(toc,new_item);
 }
 
+/*add_toc
+/params: 
+ toc: the node in the AST that is of type NODE_TOC
+ root: the starting root node of the AST
+ maxDepth: the depth if specified after the toc eg: {toc:4}
+ */
+
+/*This functions walks through the whole tree, and every time it encounters a header of valid level, it calls add_toc item on the node */
 void add_toc(cmark_node *toc, cmark_node *root,int maxDepth)
 {
     cmark_iter *iter = cmark_iter_new(root);
@@ -93,6 +113,7 @@ void add_toc(cmark_node *toc, cmark_node *root,int maxDepth)
                 {
                     if(child->type==NODE_TEXT)
                     {
+                        //the url is the user_data of the header that contains string like tocX
                         add_toc_item(toc,cmark_node_get_literal(child),url,level);
                         break;
                     }
@@ -290,7 +311,6 @@ finalize(cmark_parser *parser, cmark_node* b)
             {
                 while(cmark_strbuf_at(&b->string_content,0)=='<' && cmark_strbuf_at(&b->string_content,1)=='<' && (pos = cmark_parse_include_inline(&b->string_content,parser)))
                 {
-//                    printf("I CAME HERE \n");
                     cmark_strbuf_drop(&b->string_content,pos);
                 }
                 if(is_blank(&b->string_content,0))
@@ -298,10 +318,13 @@ finalize(cmark_parser *parser, cmark_node* b)
                     cmark_node_free(b);
                 }
             }
+            //check if you've encountered a { to start parsing for the {toc}
             else if(cmark_strbuf_at(&b->string_content,0)=='{')
             {
+                //parse_toc_inline is in inlines.c
                 while(cmark_strbuf_at(&b->string_content,0)=='{' && (pos = cmark_parse_toc_inline(&b->string_content,parser)))
                 {
+                    //if successfully passed, drop it from the string_content of the node so that it doesn't get added as a paragraph
                     cmark_strbuf_drop(&b->string_content,pos);
                 }
                 if(is_blank(&b->string_content,0))
@@ -528,6 +551,13 @@ cmark_node *add_body(cmark_node *root)
     
 }
 
+/* add_header_links:
+    params:
+    root: starting root node of AST
+    maxDepth: maximum allowed depth if specified
+ */
+
+/* this function will walk the tree and whenever it encounters a header of appropriate level, it adds a string to the user data of the form tocX where X is the number of the link. When being rendered, check if the header contains any user_data and if it does, render it as <h1 name = "tocX">*/
 void add_header_links(cmark_node *root,int maxDepth)
 {
     cmark_iter *iter = cmark_iter_new(root);
@@ -551,6 +581,11 @@ void add_header_links(cmark_node *root,int maxDepth)
 }
 
 
+/* toc_present:
+    params:
+    root: root node of AST */
+
+/* This function will walk the tree of nodes using an iterator and returns a node of the type TOC if it encounters it. Used to determine if the document has a TOC node */
 cmark_node *toc_present(cmark_node *root)
 {
     cmark_iter *iter = cmark_iter_new(root);
@@ -579,15 +614,19 @@ static cmark_node *finalize_document(cmark_parser *parser)
     }
     finalize(parser, parser->root);
     process_inlines(parser->root, parser->refmap, parser->options);
+    /*Add a body in case << syntax was used to include files. This is necessary because the <link> tags to include the files were placed inside a head tag. so we place the rest of the content inside a body tag
+     */
     parser->root = add_body(parser->root);
     if((toc = toc_present(parser->root))!=NULL)
     {
         int maxDepth = atoi(cmark_node_get_user_data(toc));
         if(maxDepth == -1)
         {
-            maxDepth = 10;
+            maxDepth = 10; //allows upto h10
         }
+        //go to all the valid headers and populate their user_data field
         add_header_links(parser->root,maxDepth);
+        //add the children to the toc_node as node_items
         add_toc(toc,parser->root,maxDepth);
     }
     return parser->root;
