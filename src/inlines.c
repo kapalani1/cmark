@@ -793,6 +793,7 @@ noMatch:
 
 }
 
+//This function is processes the inline links, when it encounters a }
 static cmark_node* handle_close_curly_brace(subject* subj,cmark_node* parent)
 {
     delimiter *opener = subj->last_delim;
@@ -1061,19 +1062,6 @@ static int subject_find_special_char(subject *subj, int options)
 	return subj->input.len;
 }
 
-//void print_nodes(cmark_node *root)
-//{
-//    cmark_event_type ev_type;
-//    cmark_iter *iter = cmark_iter_new(root);
-//    while((ev_type = cmark_iter_next(iter))!=CMARK_EVENT_DONE)
-//    {
-//        cmark_node *cur = cmark_iter_get_node(iter);
-//        printf("Node is of type %s and the contains data %s \n",cmark_node_get_type_string(cur),cur->as.literal.data);
-//    }
-//    
-//    cmark_iter_free(iter);
-//}
-
 
 // Parse an inline, advancing subject, and add it as a child of parent.
 // Return 0 if no inline can be parsed, 1 otherwise.
@@ -1165,15 +1153,6 @@ static int parse_inline(subject* subj, cmark_node * parent, int options)
 	if (new_inl != NULL) {
         cmark_node_append_child(parent, new_inl);
 	}
-//    cmark_iter *iter = cmark_iter_new(parent);
-//    cmark_event_type ev_type;
-//    printf("TREE \n");
-//    while((ev_type = cmark_iter_next(iter)!=CMARK_EVENT_DONE))
-//    {
-//        cmark_node *cur = cmark_iter_get_node(iter);
-//        printf("node is of type %s and contains %s \n",cmark_node_get_type_string(cur),cur->as.literal.data);
-//      }
-//    cmark_iter_free(iter);
 	return 1;
 }
 
@@ -1270,10 +1249,7 @@ int cmark_parse_reference_inline(cmark_strbuf *input, cmark_reference_map *refma
 // after include is parsed.
 int cmark_parse_include_inline(cmark_strbuf *input,cmark_parser *parser)
 {
-//    printf("input = %s with length = %d \n",input->ptr,input->size);
-//    printf("Inside cmark_parse_include_inline \n");
     subject subj;
-//    printf("root is of type %s \n",cmark_node_get_type_string(parser->root));
     cmark_chunk file;
     char *filename;
     
@@ -1282,7 +1258,6 @@ int cmark_parse_include_inline(cmark_strbuf *input,cmark_parser *parser)
     spnl(&subj);
     matchlen = scan_link_url(&subj.input, subj.pos);
     if (matchlen) {
-//        printf("I matched %d chars\n",matchlen);
         file = cmark_chunk_dup(&subj.input, subj.pos, matchlen);
         subj.pos += matchlen;
         //already will match 2 chars. So if we match less than 4 characters no way we can have <<...>>
@@ -1296,8 +1271,6 @@ int cmark_parse_include_inline(cmark_strbuf *input,cmark_parser *parser)
 //            //advancing by 2 because don't want to include the << at the start
             memcpy(filename,(char*)file.data+2,file.len-2);
             filename[file.len-4] = '\0';
-//            printf("filename = %s \n",filename);
-//            printf("Perfect \n");
             cmark_add_to_head(parser->root,filename);
         }
         else

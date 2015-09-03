@@ -38,6 +38,7 @@ static inline void cr(cmark_strbuf *html)
 struct render_state {
 	cmark_strbuf* html;
 	cmark_node *plain;
+    //Added the followint fields to the render state to be able to render table of contents
     bool inside_toc;
     int prev_level;
     int open;

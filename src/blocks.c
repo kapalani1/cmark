@@ -113,7 +113,7 @@ void add_toc(cmark_node *toc, cmark_node *root,int maxDepth)
                 {
                     if(child->type==NODE_TEXT)
                     {
-                        //the url is the user_data of the header that contains string like tocX
+                        //the url parameter that is passed is the user_data of the header that contains string like "tocX"
                         add_toc_item(toc,cmark_node_get_literal(child),url,level);
                         break;
                     }
@@ -324,7 +324,7 @@ finalize(cmark_parser *parser, cmark_node* b)
                 //parse_toc_inline is in inlines.c
                 while(cmark_strbuf_at(&b->string_content,0)=='{' && (pos = cmark_parse_toc_inline(&b->string_content,parser)))
                 {
-                    //if successfully passed, drop it from the string_content of the node so that it doesn't get added as a paragraph
+                    //if successfully passed, drop it from the string_content of the node so that it doesn't get added as a paragraph. All the text in a paragraph node is stored in a node's string_content before its processed into text nodes
                     cmark_strbuf_drop(&b->string_content,pos);
                 }
                 if(is_blank(&b->string_content,0))
@@ -557,7 +557,7 @@ cmark_node *add_body(cmark_node *root)
     maxDepth: maximum allowed depth if specified
  */
 
-/* this function will walk the tree and whenever it encounters a header of appropriate level, it adds a string to the user data of the form tocX where X is the number of the link. When being rendered, check if the header contains any user_data and if it does, render it as <h1 name = "tocX">*/
+/* this function will walk the tree and whenever it encounters a header of appropriate level, it adds a string to the user data of the form tocX where X is the number of the link. When being rendered, check if the header contains any user_data and if it does, render it as <h1 name = "tocX">. I chose to add the name attribute to the header tag rather than the name because its easier than adding another <a> tag as a child of the header tag*/
 void add_header_links(cmark_node *root,int maxDepth)
 {
     cmark_iter *iter = cmark_iter_new(root);
@@ -1066,6 +1066,7 @@ finished:
     cmark_strbuf_clear(parser->curline);
 }
 
+/* This function finds the first node in the AST that is not an include tag ( a tag that includes files using <<). This is necessary to separate the document into a head and a body */
 cmark_node *find_first_non_include(cmark_node *document)
 {
     cmark_iter *iter = cmark_iter_new(document);
@@ -1084,9 +1085,9 @@ cmark_node *find_first_non_include(cmark_node *document)
     return NULL;
 }
 
+/* Thus function takes a node of type NODE_DOCUMENT and the name of the file to include as specified by the << tag and creates a new NODE_INCLUDE and adds it as a child to the head tag, taking care to create/use a head if/if it doesn't exist */
 void cmark_add_to_head(cmark_node *node,char *filename)
 {
-//    printf("node->type = %s\n",cmark_node_get_type_string(node));
     if(node->type!=NODE_DOCUMENT)
     {
         fprintf(stderr,"Head can only be added to document node \n");
@@ -1094,8 +1095,6 @@ void cmark_add_to_head(cmark_node *node,char *filename)
     }
     assert(node->type==NODE_DOCUMENT);
     cmark_node *new_include = cmark_node_new(NODE_INCLUDE);
-//    printf("%p \n",new_include);
-//    printf("filename = %s \n",filename);
     if(!cmark_node_set_literal(new_include,filename))
     {
         fprintf(stderr,"could not set literal \n");
@@ -1103,50 +1102,26 @@ void cmark_add_to_head(cmark_node *node,char *filename)
     }
     if(node->first_child->type!=NODE_HEAD)
     {
-//        printf("Doc did not have a head \n");
-//        node->type = NODE_BODY;
-//        cmark_node *new_root = cmark_node_new(NODE_DOCUMENT);
-//        cmark_node_append_child(new_root,node);
-//        print_nodes(new_root);
-//        new_root->start_line = node->start_line;
-//        new_root->start_column = node->start_column;
-//        new_root->end_line = node->end_line;
-//        new_root->end_column = node->end_column;
-//        new_root->open = node->open;
-//        new_root->last_line_blank = node->last_line_blank;
         cmark_node_prepend_child(node,cmark_node_new(NODE_HEAD));
-//        printf("*********\n");
-//        printf("YOOHOO!\n");
         cmark_node_append_child(node->first_child,new_include);
-////        printf("Append returned %d \n",ret);
-////        print_nodes(new_root);
-////        printf("new root is of type %s \n",cmark_node_get_type_string(new_root));
-////        printf("parent is of type %s \n",cmark_node_get_type_string(node->parent));
-//        assert(new_root==node->parent);
-//        printf("Node is of type %s \n",cmark_node_get_type_string(node));
-//        return node->parent;
     }
     else
     {
         cmark_node_append_child(node->first_child,new_include);
-//        printf("*********\n");
-//        print_nodes(new_root);
-//        return node;
     }
 
 }
 
+// This function adds the tags to the head if they were passed in as command line parameters
 void cmark_include_files(cmark_node *document,char **argv, int *includes, int numincludes)
 {
     for(int i=0;i<numincludes;i++)
     {
         cmark_add_to_head(document,argv[includes[i]]);
-//        printf("TEMP\n");
-//        print_nodes(document);
-//        document = temp;
     }
 }
 
+// Useful debugging function to print the nodes of a tree. I USED THIS FUNCTION A LOT WHILE DEBUGGING
 void print_nodes(cmark_node *root)
 {
     cmark_event_type ev_type;
